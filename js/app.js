@@ -184,7 +184,7 @@ function addToCartWithVariant(item, variant, qty = 1, btnEl = null) {
 
     const ex = cart.find(c => c.name === displayName);
     if (ex) ex.qty += qty;
-    else cart.push({ ...item, name: displayName, qty, notes: '' });
+    else cart.push({ ...item, name: displayName, original_name: item.name, qty, notes: '' });
 
     updateCartUI();
     if (btnEl) flyToCart(item.image, btnEl);
@@ -1070,6 +1070,11 @@ async function placeOrder() {
     try {
         if (!cart.length) {
             showToast("⚠️ Your cart is empty", true);
+            _isPlacingOrder = false;
+            if (placeBtn) {
+                placeBtn.disabled = false;
+                placeBtn.textContent = "Place Order";
+            }
             return;
         }
 
@@ -1079,6 +1084,11 @@ async function placeOrder() {
             if (!sessionTable && !($("checkoutTable")?.value || "").trim()) {
                 showToast("⚠️ Please enter your table number", true);
                 $("checkoutTable")?.focus();
+                _isPlacingOrder = false;
+                if (placeBtn) {
+                    placeBtn.disabled = false;
+                    placeBtn.textContent = "Place Order";
+                }
                 return;
             }
         }
@@ -1094,6 +1104,7 @@ async function placeOrder() {
             sub += lineSub;
             return {
                 name: i.name,
+                original_name: i.original_name || i.name,
                 qty: Number(i.qty) || 1,
                 price: Number(i.price) || 0,
                 notes: i.notes || ""
@@ -1109,7 +1120,7 @@ async function placeOrder() {
         // Save order directly to Supabase Cloud Database (triggers real-time update on admin dashboard)
         if (window.sb && typeof window.sbSaveOrder === 'function') {
             try {
-                await window.sbSaveOrder({
+                const ok = await window.sbSaveOrder({
                     tableNumber: finalTableNum,
                     customerName: name,
                     customerPhone: phone || null,
@@ -1119,8 +1130,16 @@ async function placeOrder() {
                     total: total,
                     notes: notes || null
                 });
+                if (!ok) throw new Error("Database rejected order");
             } catch (e) {
                 console.error('[SB] Failed to save order:', e);
+                showToast("⚠️ Failed to place order. Please try again.", true);
+                _isPlacingOrder = false;
+                if (placeBtn) {
+                    placeBtn.disabled = false;
+                    placeBtn.textContent = "Place Order";
+                }
+                return;
             }
         }
 
@@ -1189,32 +1208,50 @@ function startOrderTracking() {
 
 /* ===== WAITER FAB ===== */
 function initWaiter() {
-    $("waiterFab")?.addEventListener("click", () => {
-        $("waiterModal")?.classList.add("open");
-        $("waiterModal")?.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-    });
-    document.querySelectorAll(".waiter-card").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const type = btn.dataset.waiter;
-            const tableNum = getTableNumber() || "Unknown";
-            const labels = { water: "Need Water 💧", bill: "Need Bill 🧾", help: "Need Assistance 🙋", call: "Call Waiter 🛎️" };
-            const msg = `🛎️ *${labels[type] || "Request"}*\n🪑 Table #${tableNum}\n— ${CONFIG.restaurantName}`;
-            const formattedNumber = formatWhatsAppNumber(CONFIG.whatsappPhone);
-        const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(msg)}`;
-        window.open(whatsappUrl, "_blank");
-            $("waiterModal")?.classList.remove("open");
-            $("waiterModal")?.setAttribute("aria-hidden", "true");
-            document.body.style.overflow = "";
-            showToast("Request sent to staff ✅");
-        });
-    });
-    // Close waiter modal on backdrop/close button
-    document.addEventListener("click", (e) => {
-        if (e.target.closest("#waiterModal [data-close]") || e.target.closest("#waiterModal .modal-backdrop")) {
-            $("waiterModal")?.classList.remove("open");
-            $("waiterModal")?.setAttribute("aria-hidden", "true");
-            document.body.style.overflow = "";
+    $("waiterFab")?.addEventListener("click", async () => {
+        const btn = $("waiterFab");
+        btn.disabled = true;
+        
+        try {
+            const tableNum = getTableNumber() || "Takeaway";
+            const itemsList = [{
+                name: "Water Bottle",
+                qty: 1,
+                price: 20,
+                notes: "1-Click Order"
+            }];
+            const total = 20;
+
+            if (window.sb && typeof window.sbSaveOrder === 'function') {
+                await window.sbSaveOrder({
+                    tableNumber: tableNum,
+                    customerName: "Guest",
+                    customerPhone: null,
+                    items: itemsList,
+                    subtotal: total,
+                    gst: 0,
+                    total: total,
+                    notes: "1-Click Order"
+                });
+            }
+            if ($("successTableBadge")) $("successTableBadge").textContent = `Table #${tableNum}`;
+            if ($("successOrderItems")) {
+                const itemsHtml = itemsList.map(i => `<div>${i.qty}× ${esc(i.name)} — ₹${i.price * i.qty}</div>`).join('');
+                $("successOrderItems").innerHTML = itemsHtml + `<div style="font-weight:800; color:var(--text); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border);">Total: ₹${total}</div>`;
+            }
+
+            closeScreens();
+            $("screenSuccess")?.classList.add("open");
+            $("screenSuccess")?.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            showToast("💧 Water ordered successfully!");
+            launchConfetti();
+            startOrderTracking();
+        } catch (err) {
+            console.error("Error ordering water:", err);
+            showToast("⚠️ Failed to order water.", true);
+        } finally {
+            setTimeout(() => { btn.disabled = false; }, 2000);
         }
     });
 }
@@ -1241,8 +1278,6 @@ function initModals() {
 
     $("successContinue")?.addEventListener("click", () => {
         closeScreens();
-        cart = [];
-        updateCartUI();
         renderMenu();
     });
 

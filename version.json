@@ -1,7 +1,6 @@
 {
   "versionCode": 14,
-  "versionName": "1.5.5",
+  "versionName": "v1.5.5",
   "apkUrl": "https://github.com/Abhinay1289-codeing/cafe-coffee-delite/raw/master/Cafe_Orders_Debug.apk",
-  "forceUpdate": false,
-  "changelog": "Admin Android App launcher fix: Native APK automatically opens Admin Orders Kitchen Dashboard."
+  "changelog": "Added tab navigation for Dining vs Online orders. Improved online order categorisation. Fixed modal UI text visibility issues."
 }

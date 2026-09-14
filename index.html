@@ -197,33 +197,18 @@
             </button>
         </div>
 
-        <!-- Call waiter — icon + label (clear for customers) -->
-        <button type="button" class="waiter-help-btn" id="waiterFab" aria-label="Need help? Call waiter, water or bill">
-            <span class="waiter-help-icon" aria-hidden="true">🛎️</span>
+        <!-- Order Water -->
+        <button type="button" class="waiter-help-btn" id="waiterFab" aria-label="Order Water Bottle">
+            <span class="waiter-help-icon" aria-hidden="true">💧</span>
             <span class="waiter-help-text">
-                <strong>Need Help?</strong>
-                <small>Water · Bill · Waiter</small>
+                <strong>Order Water</strong>
+                <small>1 Click Order</small>
             </span>
         </button>
 
     </div>
 
-    <!-- Waiter Help Modal -->
-    <div class="modal-sheet" id="waiterModal" aria-hidden="true">
-        <div class="modal-backdrop" data-close></div>
-        <div class="modal-panel food-modal-panel">
-            <button type="button" class="modal-close" data-close aria-label="Close">✕</button>
-            <div class="food-modal-body" style="padding-top: 20px;">
-                <h3 style="margin-bottom: 16px; font-weight: 800;">Need Help?</h3>
-                <div style="display: grid; gap: 12px;">
-                    <button type="button" class="btn-ghost waiter-card" data-waiter="water">💧 Need Water</button>
-                    <button type="button" class="btn-ghost waiter-card" data-waiter="bill">🧾 Need Bill</button>
-                    <button type="button" class="btn-ghost waiter-card" data-waiter="call">🛎️ Call Waiter</button>
-                    <button type="button" class="btn-ghost waiter-card" data-waiter="help">🙋 Need Assistance</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Food detail modal -->
     <div class="modal-sheet" id="foodModal" aria-hidden="true">

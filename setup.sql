@@ -106,10 +106,17 @@ CREATE POLICY "Users can insert orders"
   FOR INSERT 
   WITH CHECK (true);
 
--- Policy: Only authenticated users (admins) can read/update orders
+-- Policy: Users can read their own orders
+CREATE POLICY "Users can read own orders"
+  ON orders
+  FOR SELECT
+  USING (user_id = auth.uid());
+
+-- Policy: Only authenticated users (admins) can manage orders (stricter email-based or fallback to admin app logic)
+-- Note: Assuming admin uses a specific email or doesn't have a normal user_id linked to orders.
 CREATE POLICY "Admins can manage orders" 
   ON orders 
-  USING (auth.role() = 'authenticated') 
+  USING (auth.role() = 'authenticated' AND (auth.uid() != user_id OR user_id IS NULL)) 
   WITH CHECK (auth.role() = 'authenticated');
 
 -- ================================================

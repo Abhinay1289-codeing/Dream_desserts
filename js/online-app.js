@@ -325,6 +325,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         newPlaceBtn.disabled = true;
         newPlaceBtn.textContent = '⏳ Sending Order...';
 
+        if (!cart.length) {
+            showToast('⚠️ Your cart is empty', true);
+            _isPlacingOrder = false;
+            newPlaceBtn.disabled = false;
+            newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
+            return;
+        }
+
         const address = addressInput.value.trim();
         const landmark = document.getElementById('checkoutLandmark').value.trim();
         const name = document.getElementById('checkoutName').value.trim();
@@ -381,14 +389,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         let sub = 0;
         const itemsList = cart.map(i => {
             sub += i.price * i.qty;
-            return { name: i.name, qty: i.qty, price: i.price };
+            return { name: i.name, original_name: i.original_name || i.name, qty: i.qty, price: i.price };
         });
         const gstAmt = CONFIG.gstEnabled ? Math.round(sub * CONFIG.gstRate) : 0;
         const total = sub + gstAmt;
 
         try {
             if (window.sb) {
-                await window.sbSaveOrder({
+                const ok = await window.sbSaveOrder({
                     order_type: 'online',
                     user_id: currentUserSession && currentUserSession.user ? currentUserSession.user.id : null,
                     tableNumber: 'Online',
@@ -406,9 +414,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     total: total,
                     notes: notes || null
                 });
+                if (!ok) throw new Error("Database rejected order");
             }
         } catch (e) {
             console.error('[SB] Failed to save order:', e);
+            showToast("⚠️ Failed to place order. Please try again.", true);
+            _isPlacingOrder = false;
+            newPlaceBtn.disabled = false;
+            newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
+            return;
         }
 
         // Update Success Screen

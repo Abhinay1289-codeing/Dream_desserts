@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,8 +8,8 @@
     <!-- Load environment variables for both local and Netlify -->
     <script>
         window.ENV = {
-            SUPABASE_URL: 'YOUR_SUPABASE_URL',
-            SUPABASE_KEY: 'YOUR_SUPABASE_ANON_KEY'
+            SUPABASE_URL: 'https://luhwhzsyjsiwdmwrohwc.supabase.co',
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0'
         };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,18 +18,18 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --bg: #0a0b10;
-            --card: #141622;
-            --card-vacant: #181a28;
-            --border: rgba(255, 255, 255, 0.09);
-            --text: #f1f3f9;
-            --muted: #8c92a4;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --card-vacant: #ffffff;
+            --border: rgba(211, 47, 47, 0.15);
+            --text: #212121;
+            --muted: #666666;
             --primary: #d32f2f;
-            --primary-glow: rgba(211, 47, 47, 0.35);
-            --green: #22c55e;
-            --orange: #f59e0b;
-            --yellow: #eab308;
-            --blue: #3b82f6;
+            --primary-glow: rgba(211, 47, 47, 0.2);
+            --green: #2e7d32;
+            --orange: #ed6c02;
+            --yellow: #fbc02d;
+            --blue: #1976d2;
             --radius: 14px;
         }
 
@@ -48,7 +48,7 @@
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: rgba(8, 9, 13, 0.96);
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
@@ -64,13 +64,13 @@
             pointer-events: none;
         }
         .auth-card {
-            background: #161824;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 24px;
             padding: 32px 24px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
         .auth-logo {
@@ -81,22 +81,22 @@
             border: 3px solid var(--primary);
             margin-bottom: 12px;
         }
-        .auth-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; color: #fff; }
+        .auth-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; color: var(--text); }
         .auth-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; }
         .auth-form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
         .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 0.75rem; font-weight: 700; color: #ccc; text-transform: uppercase; }
+        .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
         .form-control {
-            background: #0f1017;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: var(--bg);
+            border: 1px solid var(--border);
             border-radius: 10px;
             padding: 11px 14px;
-            color: #fff;
+            color: var(--text);
             font-family: inherit;
             font-size: 0.9rem;
             outline: none;
         }
-        .form-control:focus { border-color: var(--primary); }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
         .auth-btn {
             background: linear-gradient(135deg, #d32f2f, #b71c1c);
             color: #fff;
@@ -125,7 +125,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(10, 11, 16, 0.94);
+            background: rgba(255, 255, 255, 0.94);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
             padding: 10px 16px;
@@ -133,6 +133,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         .dash-logo {
             display: flex;
@@ -140,6 +141,7 @@
             gap: 8px;
             font-weight: 800;
             font-size: 0.95rem;
+            color: var(--text);
         }
         .dash-logo img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--primary); }
         .dash-badge {
@@ -153,7 +155,7 @@
         }
         .dash-actions { display: flex; align-items: center; gap: 6px; }
         .icon-btn {
-            background: #181a28;
+            background: var(--card);
             border: 1px solid var(--border);
             color: var(--text);
             font-family: inherit;
@@ -168,17 +170,19 @@
             justify-content: center;
             gap: 2px;
             min-width: 46px;
+            transition: background 0.2s;
         }
         .icon-btn .btn-label {
             font-size: 0.58rem;
             font-weight: 700;
             color: var(--muted);
         }
-        .icon-btn:hover .btn-label { color: #fff; }
+        .icon-btn:hover { background: var(--bg); }
+        .icon-btn:hover .btn-label { color: var(--primary); }
         .icon-btn.btn-test-sound {
-            background: rgba(234, 179, 8, 0.15);
-            border-color: rgba(234, 179, 8, 0.35);
-            color: #fde047;
+            background: rgba(251, 192, 45, 0.15);
+            border-color: rgba(251, 192, 45, 0.35);
+            color: var(--yellow);
         }
         .live-dot {
             width: 8px; height: 8px;
@@ -217,95 +221,58 @@
         .stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; font-weight: 700; }
         .stat-value { font-size: 1.4rem; font-weight: 900; line-height: 1.1; }
 
-        /* ===== SIDE-BY-SIDE SPLIT VIEW LAYOUT (MATCHING WIREFRAME SKETCH) ===== */
-        .split-view-container {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 12px;
-            align-items: start;
+        /* ===== TAB NAVIGATION & LAYOUT ===== */
+        .dash-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
         }
-        @media (max-width: 480px) {
-            .split-view-container {
-                gap: 8px;
-            }
-        }
-
-        .split-column {
-            background: rgba(20, 22, 34, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 10px;
-            min-height: 420px;
-        }
-        .online-column {
-            border-right: 2px solid rgba(59, 130, 246, 0.35);
-        }
-        .dining-column {
-            border-left: 2px solid rgba(245, 158, 11, 0.35);
-        }
-
-        .column-header {
-            background: #141622;
+        .dash-tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 8px 10px;
-            margin-bottom: 12px;
-            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         }
-        .online-header { border-bottom: 2px solid #3b82f6; }
-        .dining-header { border-bottom: 2px solid #f59e0b; }
-
-        .column-title {
+        .dash-tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .dash-tab-content { display: none; }
+        .dash-tab-content.active { display: block; }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin: 20px 0 10px;
+            color: var(--text);
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .column-title h2 {
-            font-size: 1.05rem;
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: 0.5px;
-        }
-        .column-badge {
-            font-size: 0.6rem;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 10px;
-            text-transform: uppercase;
-        }
-        .badge-online { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
-        .badge-dining { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
-
-        .column-subtitle {
-            font-size: 0.68rem;
-            color: var(--muted);
-            font-weight: 700;
-            margin-top: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .online-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 8px;
         }
-        .dining-grid {
+
+        .online-grid, .dining-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 columns for Tables 1-12 as shown in sketch */
-            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 12px;
         }
         @media (max-width: 400px) {
-            .dining-grid { grid-template-columns: repeat(2, 1fr); }
-            .online-grid { grid-template-columns: 1fr; }
+            .online-grid, .dining-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         /* ===== COMPACT SQUARE TABLE CARD ===== */
         .table-card {
             position: relative;
             background: var(--card-vacant);
-            border: 2px solid rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(0, 0, 0, 0.05);
             border-radius: 16px;
             padding: 10px 6px;
             display: flex;
@@ -316,18 +283,20 @@
             min-height: 96px;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         .table-card:active { transform: scale(0.96); }
 
         /* VACANT STATE */
         .table-card.vacant {
-            background: #181a28;
-            border-color: rgba(255, 255, 255, 0.06);
+            background: #f8fafc;
+            border-color: rgba(0, 0, 0, 0.04);
+            box-shadow: none;
         }
         .table-card.vacant .table-num {
             font-size: 2.2rem;
             font-weight: 900;
-            color: #d1d5db;
+            color: #cbd5e1;
             line-height: 1;
         }
         .table-card.vacant .table-sub {
@@ -340,42 +309,26 @@
 
         /* OCCUPIED STATE — Instant visual distinction */
         .table-card.occupied {
-            background: #231922;
+            background: #fff;
             border-color: var(--primary);
-            box-shadow: 0 0 16px rgba(211, 47, 47, 0.3);
+            box-shadow: 0 4px 16px rgba(211, 47, 47, 0.15);
         }
-        .table-card.status-pending {
-            background: #282110;
-            border-color: var(--yellow);
-            box-shadow: 0 0 16px rgba(234, 179, 8, 0.35);
-        }
-        .table-card.status-preparing {
-            background: #2b1c10;
-            border-color: var(--orange);
-            box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
-        }
-        .table-card.status-ready {
-            background: #101e33;
-            border-color: var(--blue);
-            box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
-        }
-        .table-card.status-served {
-            background: #10261a;
-            border-color: var(--green);
-            box-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
-        }
+        .table-card.status-pending { border-color: var(--yellow); box-shadow: 0 4px 16px rgba(234, 179, 8, 0.15); }
+        .table-card.status-preparing { border-color: var(--orange); box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15); }
+        .table-card.status-ready { border-color: var(--blue); box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15); }
+        .table-card.status-served { border-color: var(--green); box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15); }
 
         .table-card.occupied .table-num {
             font-size: 1.8rem;
             font-weight: 900;
-            color: #fff;
+            color: var(--text);
             line-height: 1;
         }
         .table-card.occupied .item-count-badge {
             font-size: 0.65rem;
             font-weight: 800;
-            color: #fff;
-            background: rgba(0, 0, 0, 0.4);
+            color: var(--muted);
+            background: #f1f5f9;
             padding: 2px 6px;
             border-radius: 8px;
             margin-top: 4px;
@@ -384,7 +337,7 @@
         .table-card.occupied .card-total {
             font-size: 0.75rem;
             font-weight: 900;
-            color: #fde047;
+            color: var(--text);
             margin-top: 2px;
         }
 
@@ -400,12 +353,12 @@
             font-weight: 900;
             padding: 3px 7px;
             border-radius: 12px;
-            border: 2px solid #0a0b10;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.8);
+            border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             animation: pulseNotification 1.2s infinite;
         }
         @keyframes pulseNotification {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
             50% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
@@ -426,7 +379,7 @@
         }
         .modal-overlay.open { opacity: 1; visibility: visible; }
         .modal-card {
-            background: #161826;
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: 24px 24px 0 0;
             padding: 24px 20px 36px;
@@ -436,6 +389,8 @@
             overflow-y: auto;
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--text);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
         }
         .modal-overlay.open .modal-card { transform: translateY(0); }
         .modal-top {
@@ -449,7 +404,7 @@
         .modal-title { font-size: 1.2rem; font-weight: 900; }
         .modal-close {
             background: var(--card-vacant);
-            border: none;
+            border: 1px solid rgba(0,0,0,0.05);
             color: var(--muted);
             width: 32px; height: 32px;
             border-radius: 50%;
@@ -457,20 +412,21 @@
             cursor: pointer;
         }
         .modal-items-list {
-            background: rgba(0, 0, 0, 0.3);
+            background: #f8fafc;
             border-radius: 12px;
             padding: 12px;
             margin-bottom: 16px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
         .modal-item-row {
             display: flex;
             justify-content: space-between;
             font-size: 0.88rem;
             padding: 6px 0;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
         }
         .modal-item-row:last-child { border-bottom: none; }
-        .modal-item-name { font-weight: 700; }
+        .modal-item-name { font-weight: 700; color: var(--text); }
         .modal-item-price { font-weight: 800; color: var(--muted); }
         .modal-total-row {
             display: flex;
@@ -478,7 +434,7 @@
             font-size: 1.1rem;
             font-weight: 900;
             margin-bottom: 20px;
-            color: #fff;
+            color: var(--text);
         }
         .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 
@@ -619,37 +575,30 @@
             </div>
         </div>
 
-        <!-- SIDE-BY-SIDE SPLIT VIEW DASHBOARD (ONLINE vs DINING) -->
-        <div class="split-view-container">
+        <!-- TAB NAVIGATION -->
+        <div class="dash-tabs">
+            <button class="dash-tab-btn active" id="tabBtnDining" onclick="switchTab('dining')">🍽️ Dining Orders</button>
+            <button class="dash-tab-btn" id="tabBtnOnline" onclick="switchTab('online')">📱 Online Orders</button>
+        </div>
 
-            <!-- LEFT COLUMN: ONLINE ORDERS -->
-            <div class="split-column online-column">
-                <div class="column-header online-header">
-                    <div class="column-title">
-                        <span class="column-badge badge-online">📱 Online</span>
-                        <h2>Online</h2>
-                    </div>
-                    <div class="column-subtitle">Payed / Accept orders place</div>
-                </div>
-                <div class="online-grid" id="onlineTablesContainer">
-                    <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">⏳ Loading online orders...</div>
-                </div>
+        <!-- DINING TAB CONTENT -->
+        <div class="dash-tab-content active" id="tabContentDining">
+            <div class="dining-grid" id="diningTablesContainer">
+                <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">⏳ Loading dining tables...</div>
+            </div>
+        </div>
+
+        <!-- ONLINE TAB CONTENT -->
+        <div class="dash-tab-content" id="tabContentOnline">
+            <div class="section-header">🆕 Newly Arrived <span style="font-size:0.75rem; font-weight:600; color:var(--muted); margin-left:6px;">(Pending & Preparing)</span></div>
+            <div class="online-grid" id="onlineNewContainer">
+                <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">⏳ Loading new online orders...</div>
             </div>
 
-            <!-- RIGHT COLUMN: DINING TABLES -->
-            <div class="split-column dining-column">
-                <div class="column-header dining-header">
-                    <div class="column-title">
-                        <span class="column-badge badge-dining">🍽️ Dining</span>
-                        <h2>Dining</h2>
-                    </div>
-                    <div class="column-subtitle">Need to be delivered</div>
-                </div>
-                <div class="dining-grid" id="diningTablesContainer">
-                    <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">⏳ Loading dining tables...</div>
-                </div>
+            <div class="section-header" style="margin-top:24px;">🛵 Out for Delivery <span style="font-size:0.75rem; font-weight:600; color:var(--muted); margin-left:6px;">(Ready & Reached)</span></div>
+            <div class="online-grid" id="onlineDeliveryContainer">
+                <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">No orders out for delivery</div>
             </div>
-
         </div>
 
     </div>
@@ -659,7 +608,10 @@
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-top">
                 <div class="modal-title" id="modalTableTitle">Table #1</div>
-                <button class="modal-close" onclick="closeTableModal()">✕</button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button class="btn-step btn-serve" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openMenuOverlay()">+ Add Items</button>
+                    <button class="modal-close" onclick="closeTableModal()">✕</button>
+                </div>
             </div>
             
             <div class="modal-items-list" id="modalItemsList"></div>
@@ -737,6 +689,17 @@
     </div>
 
     <div class="toast-container" id="toastBox"></div>
+
+    <!-- MENU IFRAME OVERLAY -->
+    <div class="modal-overlay" id="menuIframeOverlay" onclick="closeMenuOverlay()">
+        <div class="modal-card" style="padding:0; height:90vh; display:flex; flex-direction:column; overflow:hidden;" onclick="event.stopPropagation()">
+            <div style="background:#161826; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+                <div style="font-weight:900;" id="menuIframeTitle">Add Items</div>
+                <button class="modal-close" onclick="closeMenuOverlay()">✕</button>
+            </div>
+            <iframe id="menuIframe" src="" style="width:100%; height:100%; border:none; flex:1; background:var(--bg);"></iframe>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>
@@ -943,23 +906,37 @@
                 const itemsFormatted = (ord.items || []).map(i => `${i.qty || 1}× ${esc(i.name)} (₹${i.price * (i.qty || 1)})`).join(', ');
 
                 return `
-                    <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px;">
+                    <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                            <span style="font-weight:900; font-size:0.95rem; color:#fff;">Table #${ord.table_number || 'Takeaway'}</span>
-                            <span style="background:rgba(34, 197, 94, 0.2); color:#22c55e; border:1px solid rgba(34, 197, 94, 0.35); font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:12px;">₹${ord.total} Paid</span>
+                            <span style="font-weight:900; font-size:0.95rem; color:var(--text);">Table #${ord.table_number || 'Takeaway'}</span>
+                            <span style="background:rgba(34, 197, 94, 0.1); color:#22c55e; border:1px solid rgba(34, 197, 94, 0.35); font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:12px;">₹${ord.total} Paid</span>
                         </div>
                         <div style="font-size:0.78rem; color:var(--muted); margin-bottom: 6px;">📅 ${dateStr} · 👤 ${esc(ord.customer_name || 'Guest')}</div>
-                        <div style="font-size:0.84rem; font-weight:600; color:#d1d5db; line-height:1.4;">${itemsFormatted || 'No item detail'}</div>
+                        <div style="font-size:0.84rem; font-weight:600; color:var(--text); line-height:1.4;">${itemsFormatted || 'No item detail'}</div>
                     </div>
                 `;
             }).join('');
         }
 
-        // RENDER COMPACT TABLE GRID (SPLIT VIEW: ONLINE vs DINING)
+        function switchTab(tab) {
+            document.querySelectorAll('.dash-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dash-tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'dining') {
+                document.getElementById('tabBtnDining').classList.add('active');
+                document.getElementById('tabContentDining').classList.add('active');
+            } else if (tab === 'online') {
+                document.getElementById('tabBtnOnline').classList.add('active');
+                document.getElementById('tabContentOnline').classList.add('active');
+            }
+        }
+
+        // RENDER COMPACT TABLE GRID (TAB VIEW: ONLINE vs DINING)
         function renderTableGrid() {
-            const onlineContainer = document.getElementById('onlineTablesContainer');
+            const onlineNewContainer = document.getElementById('onlineNewContainer');
+            const onlineDeliveryContainer = document.getElementById('onlineDeliveryContainer');
             const diningContainer = document.getElementById('diningTablesContainer');
-            if (!onlineContainer || !diningContainer) return;
+            if (!onlineNewContainer || !onlineDeliveryContainer || !diningContainer) return;
 
             const DEFAULT_DINING_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             
@@ -985,29 +962,25 @@
             if (document.getElementById('statBilled')) document.getElementById('statBilled').textContent = billedCount;
             if (document.getElementById('statRevenue')) document.getElementById('statRevenue').textContent = '₹' + todayRevenue;
 
-            // 1. RENDER ONLINE ORDERS (LEFT COLUMN: "Accept orders place / Payed")
-            onlineContainer.innerHTML = '';
+            // 1. RENDER ONLINE ORDERS (TWO SUB-SECTIONS)
+            onlineNewContainer.innerHTML = '';
+            onlineDeliveryContainer.innerHTML = '';
+
             const onlineKeys = Object.keys(activeTableOrdersMap).filter(k => 
                 k.toLowerCase() === 'online' || 
                 (activeTableOrdersMap[k] && activeTableOrdersMap[k].some(o => String(o.order_type).toLowerCase() === 'online'))
             );
 
-            if (onlineKeys.length === 0) {
-                onlineContainer.innerHTML = `
-                    <div class="table-card vacant" style="grid-column:1/-1; padding: 28px 10px; border-style: dashed;">
-                        <div style="font-size:1.8rem; margin-bottom:4px;">📱</div>
-                        <div class="table-num" style="font-size:1rem; color:var(--muted);">Online</div>
-                        <div class="table-sub" style="font-size:0.62rem; color:#60a5fa; margin-top:4px;">Accept orders place</div>
-                        <div style="font-size:0.62rem; color:var(--muted); margin-top:4px;">No Active Orders</div>
-                    </div>
-                `;
-            } else {
+            let newOrdersCount = 0;
+            let deliveryOrdersCount = 0;
+
+            if (onlineKeys.length > 0) {
                 onlineKeys.forEach(tNum => {
                     const ordersForTable = activeTableOrdersMap[tNum] || [];
                     const statuses = ordersForTable.map(o => o.status);
                     let domStatus = 'pending';
                     if (statuses.every(s => s === 'served')) domStatus = 'served';
-                    else if (statuses.includes('ready')) domStatus = 'ready';
+                    else if (statuses.includes('ready') || statuses.includes('reached')) domStatus = 'ready';
                     else if (statuses.includes('preparing')) domStatus = 'preparing';
 
                     let totalAmt = 0;
@@ -1030,12 +1003,27 @@
                     card.innerHTML = `
                         ${notifyBadgeHtml}
                         <div class="table-num" style="font-size:1.1rem;">📱 Online</div>
-                        <div style="font-size:0.68rem; font-weight:800; color:#fff; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${custName}</div>
+                        <div style="font-size:0.68rem; font-weight:800; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${custName}</div>
                         <div class="item-count-badge">${itemCount} items</div>
                         <div class="card-total">₹${totalAmt}</div>
                     `;
-                    onlineContainer.appendChild(card);
+
+                    // Categorize based on status
+                    if (domStatus === 'pending' || domStatus === 'preparing') {
+                        onlineNewContainer.appendChild(card);
+                        newOrdersCount++;
+                    } else {
+                        onlineDeliveryContainer.appendChild(card);
+                        deliveryOrdersCount++;
+                    }
                 });
+            }
+            
+            if (newOrdersCount === 0) {
+                onlineNewContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">No new online orders</div>`;
+            }
+            if (deliveryOrdersCount === 0) {
+                onlineDeliveryContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">No orders out for delivery</div>`;
             }
 
             // 2. RENDER DINING TABLES (RIGHT COLUMN: "Need to be delivered")
@@ -1058,6 +1046,7 @@
                 card.className = `table-card ${isOccupied ? 'occupied' : 'vacant'}`;
 
                 if (!isOccupied) {
+                    card.onclick = () => openMenuOverlay(tNum);
                     card.innerHTML = `
                         <div class="table-num">${tNum}</div>
                         <div class="table-sub">Vacant</div>
@@ -1211,6 +1200,7 @@
                 const lineTotal = data.qty * data.price;
                 return `
                     <div class="modal-item-row" style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,0.08);">
+                        <button style="background:transparent; border:none; color:#ef4444; font-weight:bold; cursor:pointer; padding:0 8px; font-size:1.1rem; margin-right:4px;" onclick="removeOrderItem('${selectedTableNum}', '${esc(name)}')">✕</button>
                         <span style="flex:2; font-weight:700; color:#fff;">${esc(name)}</span>
                         <span style="flex:0.8; text-align:center; color:#fde047; font-weight:800;">${data.qty}×</span>
                         <span style="flex:1; text-align:right; color:#9ca3af; font-size:0.82rem;">₹${Math.round(data.price)}</span>
@@ -1304,6 +1294,75 @@
 
             showToast('💾 Printer settings saved!');
             closePrinterModal();
+        }
+
+        // MENU OVERLAY AND ORDER EDITING
+        function openMenuOverlay(tNum) {
+            const table = tNum || selectedTableNum;
+            if (!table) return;
+            document.getElementById('menuIframeTitle').textContent = `Adding Items to Table #${table}`;
+            document.getElementById('menuIframe').src = `table.html?table=${table}&admin=1`;
+            document.getElementById('menuIframeOverlay').classList.add('open');
+        }
+
+        function closeMenuOverlay() {
+            document.getElementById('menuIframeOverlay').classList.remove('open');
+            document.getElementById('menuIframe').src = '';
+            loadOrders(); // Refresh to show new items
+        }
+
+        async function removeOrderItem(tableName, itemName) {
+            if (!confirm(`Remove 1x ${itemName} from Table #${tableName}?`)) return;
+            
+            // 1. Fetch all pending/preparing/ready orders for this table
+            const orders = activeTableOrdersMap[tableName] || [];
+            if (!orders.length) return;
+
+            let orderToUpdate = null;
+            let itemIndex = -1;
+
+            for (let ord of orders) {
+                const items = ord.items || [];
+                const idx = items.findIndex(i => (i.name || i.item_name) === itemName);
+                if (idx !== -1) {
+                    orderToUpdate = ord;
+                    itemIndex = idx;
+                    break;
+                }
+            }
+
+            if (!orderToUpdate) return;
+
+            const updatedItems = [...orderToUpdate.items];
+            
+            if (updatedItems[itemIndex].qty > 1) {
+                updatedItems[itemIndex].qty -= 1;
+            } else {
+                updatedItems.splice(itemIndex, 1);
+            }
+
+            let newSubtotal = 0;
+            updatedItems.forEach(i => {
+                newSubtotal += (Number(i.price) || 0) * (Number(i.qty) || 1);
+            });
+            let newGst = (window.CONFIG && window.CONFIG.gstEnabled) ? Math.round(newSubtotal * (window.CONFIG.gstRate || 0.05)) : 0;
+            let newTotal = newSubtotal + newGst;
+
+            try {
+                const { error } = await window.sb.from('orders').update({
+                    items: updatedItems,
+                    subtotal: newSubtotal,
+                    gst: newGst,
+                    total: newTotal
+                }).eq('id', orderToUpdate.id);
+                
+                if (error) throw error;
+                showToast(`🗑️ Removed 1x ${itemName}`);
+                loadOrders(); 
+            } catch (err) {
+                console.error("Failed to remove item", err);
+                showToast("⚠️ Failed to remove item", true);
+            }
         }
 
         async function handleTestPrint() {
@@ -1516,7 +1575,7 @@
             }
         }
         // IN-APP AUTO-UPDATE SYSTEM
-        const CURRENT_APP_VERSION = 13; // Version Code (v1.5.4)
+        const CURRENT_APP_VERSION = 14; // Version Code (v1.5.5)
         let latestApkUrl = 'https://github.com/Abhinay1289-codeing/cafe-coffee-delite/raw/master/Cafe_Orders_Debug.apk';
         let currentUpdateVersionCode = 13;
 

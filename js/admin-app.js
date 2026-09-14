@@ -1152,6 +1152,12 @@ if (itemForm) {
         const originalName = document.getElementById("editItemIndex").value;
         const name = document.getElementById("editItemName").value.trim();
         const price = parseInt(document.getElementById("editItemPrice").value, 10);
+        
+        if (isNaN(price) || price < 0) {
+            showToast("⚠️ Please enter a valid positive price", true);
+            return;
+        }
+
         const category = document.getElementById("editItemCategory").value;
         const imageUrl = document.getElementById("editItemImage").value.trim();
         const description = document.getElementById("editItemDesc").value.trim();
