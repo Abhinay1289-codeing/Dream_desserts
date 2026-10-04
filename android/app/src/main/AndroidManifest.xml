@@ -60,8 +60,8 @@
             android:name=".OrderActionReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.restaurant.orders.ACTION_ACCEPT" />
-                <action android:name="com.restaurant.orders.ACTION_DECLINE" />
+                <action android:name="com.dreamdesserts.app.ACTION_ACCEPT" />
+                <action android:name="com.dreamdesserts.app.ACTION_DECLINE" />
             </intent-filter>
         </receiver>
 

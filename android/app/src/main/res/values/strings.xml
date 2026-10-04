@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Restaurant Orders</string>
-    <string name="title_activity_main">Restaurant Orders</string>
-    <string name="package_name">com.restaurant.orders</string>
-    <string name="custom_url_scheme">com.restaurant.orders</string>
+    <string name="app_name">Dream Desserts</string>
+    <string name="title_activity_main">Dream Desserts</string>
+    <string name="package_name">com.dreamdesserts.app</string>
+    <string name="custom_url_scheme">com.dreamdesserts.app</string>
 </resources>

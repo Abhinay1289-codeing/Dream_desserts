@@ -1,6 +1,6 @@
 {
-  "appId": "com.restaurant.orders",
-  "appName": "Restaurant Orders",
+  "appId": "com.dreamdesserts.app",
+  "appName": "Dream Desserts",
   "webDir": "app",
   "android": {
     "allowMixedContent": true,
