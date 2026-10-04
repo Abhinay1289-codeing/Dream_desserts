@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
-    <title>Table QR Setup | Staff Portal</title>
+    <title>Master QR Setup | Staff Portal</title>
     <!-- Load environment variables for both local and Netlify -->
     <script>
         window.ENV = {
@@ -77,36 +77,35 @@
 
     <main class="staff-page">
         <a href="index.html" class="staff-back">← Back to menu</a>
-        <h1>Table QR setup</h1>
-        <p>Guests scan a QR on their table — no manual table entry. Orders on WhatsApp show <strong>Table #5</strong> for admin.</p>
+        <h1>Master QR Setup</h1>
+        <p>Print a <strong>Single Master QR Code</strong> for your restaurant. Customers scan the QR, enter their Name, and are automatically assigned a sequential Token Number (e.g. Token #1, Token #2) bound to their device until the bill is settled!</p>
 
         <div class="staff-card">
-            <h2>How to create QRs</h2>
+            <h2>Single Restaurant QR Code</h2>
             <ol>
                 <li>Use any QR generator (qr-code-generator.com, Canva, etc.)</li>
-                <li>One QR per table — use the link format below</li>
-                <li>Print and place on each table</li>
+                <li>Generate QR for your master menu link:</li>
             </ol>
-            <code id="qrExample">index.html?table=1</code>
+            <code id="qrExample">table.html</code>
             <div class="staff-example">
-                <span>Table 1 → <code style="display:inline;padding:2px 6px;">?table=1</code> → admin sees <strong>Table #1</strong></span>
-                <span>Table 12 → <code style="display:inline;padding:2px 6px;">?table=12</code> → admin sees <strong>Table #12</strong></span>
-                <span>Patio → <code style="display:inline;padding:2px 6px;">?table=Patio</code> → admin sees <strong>Table #Patio</strong></span>
+                <span>📱 Scan QR → Customer Enters Name → Gets <strong>Token #1</strong></span>
+                <span>📱 Re-ordering from same device → Appends to <strong>Token #1</strong></span>
+                <span>🛎️ Admin clicks Settle Bill → Token session closes & resets for next visit</span>
             </div>
         </div>
 
         <div class="staff-card">
-            <h2>WhatsApp message to admin</h2>
+            <h2>Kitchen & Admin Dashboard</h2>
             <p style="font-size:0.82rem;color:var(--muted);line-height:1.6;margin:0;">
-                When a guest orders, you receive:<br>
-                <em style="color:#ffb366;">ORDER FROM TABLE #7</em> with items and total.
+                When a customer orders, the admin sees:<br>
+                <em style="color:#ffb366;">TOKEN #1 (Customer Name)</em> with live items, total, and ready status.
             </p>
         </div>
     </main>
 
     <script>
-        const base = window.location.href.replace(/table\.html.*$/, "index.html").split("?")[0];
-        document.getElementById("qrExample").textContent = base + "?table=1";
+        const base = window.location.href.split("?")[0].replace(/qr-setup\.html.*$/, "table.html");
+        document.getElementById("qrExample").textContent = base;
     </script>
 
 <!-- Service Worker -->

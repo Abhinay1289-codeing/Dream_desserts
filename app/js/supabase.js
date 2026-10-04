@@ -445,3 +445,98 @@ async function sbInvokeNotifyNewOrder(orderData) {
     }
 }
 window.sbInvokeNotifyNewOrder = sbInvokeNotifyNewOrder;
+
+/* ===== TOKEN & DEVICE SESSION HELPERS ===== */
+
+function sbGetDeviceId() {
+    let devId = localStorage.getItem('ccd_device_session_id');
+    if (!devId) {
+        devId = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+        localStorage.setItem('ccd_device_session_id', devId);
+    }
+    return devId;
+}
+window.sbGetDeviceId = sbGetDeviceId;
+
+async function sbGetActiveDeviceToken(deviceId) {
+    if (!_supaClient) sbInit();
+    if (!_supaClient) return null;
+    const devId = deviceId || sbGetDeviceId();
+
+    try {
+        const savedToken = localStorage.getItem('ccd_active_token_number');
+        let query = _supaClient
+            .from('orders')
+            .select('*')
+            .neq('status', 'billed')
+            .neq('status', 'cancelled')
+            .order('created_at', { ascending: false });
+
+        if (savedToken) {
+            query = query.or(`device_id.eq.${devId},table_number.eq.Token ${savedToken},table_number.eq.Token #${savedToken},table_number.eq.${savedToken}`);
+        } else {
+            query = query.eq('device_id', devId);
+        }
+
+        const { data, error } = await query;
+        if (error || !data || data.length === 0) return null;
+
+        const activeOrder = data[0];
+        const tokenStr = activeOrder.table_number || '';
+        const tokenMatch = tokenStr.match(/\d+/);
+        const tokenNum = tokenMatch ? parseInt(tokenMatch[0], 10) : tokenStr;
+
+        if (tokenNum) {
+            localStorage.setItem('ccd_active_token_number', String(tokenNum));
+        }
+        if (activeOrder.customer_name) {
+            localStorage.setItem('ccd_profile_name', activeOrder.customer_name);
+        }
+
+        return {
+            tokenNumber: tokenNum,
+            tokenLabel: `Token #${tokenNum}`,
+            customerName: activeOrder.customer_name || 'Guest',
+            orders: data,
+            status: activeOrder.status
+        };
+    } catch (e) {
+        console.error('[SB] getActiveDeviceToken error:', e);
+        return null;
+    }
+}
+window.sbGetActiveDeviceToken = sbGetActiveDeviceToken;
+
+async function sbGetNextAvailableTokenNumber() {
+    if (!_supaClient) sbInit();
+    if (!_supaClient) return 1;
+
+    try {
+        const { data, error } = await _supaClient
+            .from('orders')
+            .select('table_number')
+            .neq('status', 'billed')
+            .neq('status', 'cancelled');
+
+        if (error || !data || data.length === 0) return 1;
+
+        const activeTokens = new Set();
+        data.forEach(row => {
+            const str = String(row.table_number || '');
+            const match = str.match(/\d+/);
+            if (match) {
+                activeTokens.add(parseInt(match[0], 10));
+            }
+        });
+
+        let token = 1;
+        while (activeTokens.has(token)) {
+            token++;
+        }
+        return token;
+    } catch (e) {
+        console.error('[SB] getNextAvailableTokenNumber error:', e);
+        return 1;
+    }
+}
+window.sbGetNextAvailableTokenNumber = sbGetNextAvailableTokenNumber;

@@ -1080,15 +1080,52 @@ async function placeOrder() {
             _isPlacingOrder = false;
             if (placeBtn) {
                 placeBtn.disabled = false;
-                placeBtn.textContent = "Place Order";
+                placeBtn.textContent = "🚀 Confirm & Send Order to Kitchen";
             }
             return;
         }
 
-        const finalTableNum = ($("checkoutTable")?.value || "").trim() || getTableNumber() || "Takeaway";
-        const name = ($("checkoutName")?.value || "").trim() || "Guest";
+        const name = ($("checkoutName")?.value || "").trim();
+        if (!name) {
+            showToast("⚠️ Please enter your Name to place your order", true);
+            if ($("checkoutName")) $("checkoutName").focus();
+            _isPlacingOrder = false;
+            if (placeBtn) {
+                placeBtn.disabled = false;
+                placeBtn.textContent = "🚀 Confirm & Send Order to Kitchen";
+            }
+            return;
+        }
+
         const phone = ($("checkoutPhone")?.value || "").trim() || "";
         const notes = ($("checkoutNotes")?.value || "").trim() || "";
+        const devId = (typeof window.sbGetDeviceId === 'function') ? window.sbGetDeviceId() : ('dev_' + Date.now());
+
+        // 1. Check if this device session already has an active token
+        let assignedTokenNum = null;
+        let tokenLabel = "";
+
+        if (typeof window.sbGetActiveDeviceToken === 'function') {
+            const activeSession = await window.sbGetActiveDeviceToken(devId);
+            if (activeSession && activeSession.tokenNumber) {
+                assignedTokenNum = activeSession.tokenNumber;
+                tokenLabel = `Token #${assignedTokenNum}`;
+            }
+        }
+
+        // 2. If no active token exists for this device, allocate next available sequential token number
+        if (!assignedTokenNum) {
+            if (typeof window.sbGetNextAvailableTokenNumber === 'function') {
+                assignedTokenNum = await window.sbGetNextAvailableTokenNumber();
+            } else {
+                assignedTokenNum = 1;
+            }
+            tokenLabel = `Token #${assignedTokenNum}`;
+        }
+
+        localStorage.setItem('ccd_active_token_number', String(assignedTokenNum));
+        localStorage.setItem('ccd_profile_name', name);
+        if (phone) localStorage.setItem('ccd_profile_phone', phone);
 
         let sub = 0;
         const itemsList = cart.map(i => {
@@ -1109,7 +1146,6 @@ async function placeOrder() {
         }
         const total = sub + gst;
 
-        // Save order directly to Supabase Cloud Database (triggers real-time update on admin dashboard)
         if (!window.sb && typeof window.sbInit === 'function') {
             window.sbInit();
         }
@@ -1117,14 +1153,15 @@ async function placeOrder() {
         if (window.sb && typeof window.sbSaveOrder === 'function') {
             try {
                 const ok = await window.sbSaveOrder({
-                    tableNumber: finalTableNum,
+                    tableNumber: tokenLabel,
                     customerName: name,
                     customerPhone: phone || null,
                     items: itemsList,
                     subtotal: sub,
                     gst: gst,
                     total: total,
-                    notes: notes || null
+                    notes: notes || null,
+                    device_id: devId
                 });
                 if (!ok) throw new Error("Database rejected order");
             } catch (e) {
@@ -1133,27 +1170,30 @@ async function placeOrder() {
                 _isPlacingOrder = false;
                 if (placeBtn) {
                     placeBtn.disabled = false;
-                    placeBtn.textContent = "Place Order";
+                    placeBtn.textContent = "🚀 Confirm & Send Order to Kitchen";
                 }
                 return;
             }
         } else {
             console.error('[SB] Supabase client unavailable');
-            showToast("⚠️ Order Failed: Database connection unavailable. Please inform staff.", true);
+            showToast("⚠️ Order Failed: Database connection unavailable.", true);
             _isPlacingOrder = false;
             if (placeBtn) {
                 placeBtn.disabled = false;
-                placeBtn.textContent = "Place Order";
+                placeBtn.textContent = "🚀 Confirm & Send Order to Kitchen";
             }
             return;
         }
 
         // Populate order details on success screen
-        if ($("successTableBadge")) $("successTableBadge").textContent = `Table #${finalTableNum}`;
+        if ($("successTableBadge")) $("successTableBadge").textContent = `${tokenLabel} · ${name}`;
         if ($("successOrderItems")) {
             const itemsHtml = itemsList.map(i => `<div>${i.qty}× ${esc(i.name)} — ₹${i.price * i.qty}</div>`).join('');
             $("successOrderItems").innerHTML = itemsHtml + `<div style="font-weight:800; color:var(--text); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border);">Total: ₹${total}</div>`;
         }
+
+        // Update Token Header Badge on Customer Screen
+        updateTokenBadgeUI(tokenLabel, name);
 
         // Clear cart after placing order
         cart = [];
@@ -1164,9 +1204,12 @@ async function placeOrder() {
         $("screenSuccess")?.classList.add("open");
         $("screenSuccess")?.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
-        showToast("🎉 Order sent directly to kitchen!");
+        showToast(`🎉 Order sent to kitchen! (${tokenLabel})`);
         launchConfetti();
-        startOrderTracking();
+        
+        // Start listening to real-time status updates for this Token
+        startDeviceTokenRealtimeListener(assignedTokenNum, devId);
+
     } catch (err) {
         console.error("Error placing order:", err);
         showToast("⚠️ An error occurred. Please try again.", true);
@@ -1176,6 +1219,97 @@ async function placeOrder() {
             placeBtn.textContent = "🚀 Confirm & Send Order to Kitchen";
         }
         setTimeout(() => { _isPlacingOrder = false; }, 1500);
+    }
+}
+
+function updateTokenBadgeUI(tokenLabel, customerName) {
+    const badge = $("navTableBadge");
+    const label = $("tableLabel");
+    if (badge && label) {
+        label.textContent = `${tokenLabel}${customerName ? ' (' + customerName + ')' : ''}`;
+        badge.classList.remove("is-hidden");
+        badge.style.display = "flex";
+    }
+}
+
+let _tokenRealtimeChannel = null;
+
+function startDeviceTokenRealtimeListener(tokenNum, devId) {
+    if (!window.sb) return;
+
+    if (_tokenRealtimeChannel) {
+        try { window.sb.removeChannel(_tokenRealtimeChannel); } catch(e) {}
+    }
+
+    try {
+        _tokenRealtimeChannel = window.sb.channel(`device_token_${tokenNum}_${Date.now()}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
+                const newRow = payload.new;
+                if (!newRow) return;
+
+                const rowTokenStr = String(newRow.table_number || '');
+                const isMatchingToken = rowTokenStr.includes(String(tokenNum)) || newRow.device_id === devId;
+
+                if (isMatchingToken) {
+                    if (newRow.status === 'ready' || newRow.status === 'served') {
+                        showTokenReadyModal(tokenNum);
+                    } else if (newRow.status === 'billed') {
+                        showTokenClearedNotice(tokenNum);
+                    }
+                }
+            })
+            .subscribe();
+    } catch(e) {
+        console.warn('[SB] Realtime token listener error:', e);
+    }
+}
+
+function showTokenReadyModal(tokenNum) {
+    let modal = $("tokenReadyModal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "tokenReadyModal";
+        modal.className = "modal-sheet open";
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="this.parentElement.remove()"></div>
+            <div class="modal-panel food-modal-panel" style="max-width:380px; text-align:center; padding:28px 20px;">
+                <div style="font-size:3.5rem; margin-bottom:10px;">🎉</div>
+                <h2 style="font-size:1.4rem; font-weight:900; color:var(--text);" id="tokenReadyModalTitle">Token #${tokenNum} is Ready!</h2>
+                <p style="color:var(--muted); font-size:0.9rem; margin:10px 0 20px;">Your order is prepared and ready! Please collect your order from the counter.</p>
+                <button type="button" class="btn-primary" onclick="this.closest('.modal-sheet').remove()" style="width:100%;">Okay, Got It!</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        if ($("tokenReadyModalTitle")) $("tokenReadyModalTitle").textContent = `Token #${tokenNum} is Ready!`;
+        modal.classList.add("open");
+    }
+    showToast(`🎉 Token #${tokenNum} is Ready!`);
+}
+
+function showTokenClearedNotice(tokenNum) {
+    localStorage.removeItem('ccd_active_token_number');
+    showToast(`✅ Token #${tokenNum} Bill Settled. Thank you!`);
+    const badge = $("navTableBadge");
+    if (badge) badge.style.display = "none";
+}
+
+async function checkDeviceTokenOnLoad() {
+    const savedName = localStorage.getItem('ccd_profile_name') || '';
+    if (savedName && $("checkoutName")) {
+        $("checkoutName").value = savedName;
+    }
+    const savedPhone = localStorage.getItem('ccd_profile_phone') || '';
+    if (savedPhone && $("checkoutPhone")) {
+        $("checkoutPhone").value = savedPhone;
+    }
+
+    if (typeof window.sbGetActiveDeviceToken === 'function') {
+        const active = await window.sbGetActiveDeviceToken();
+        if (active && active.tokenNumber) {
+            updateTokenBadgeUI(active.tokenLabel, active.customerName);
+            startDeviceTokenRealtimeListener(active.tokenNumber, window.sbGetDeviceId());
+        }
     }
 }
 
@@ -1466,6 +1600,7 @@ function init() {
     initModals();
     initWaiter();
     updateCartUI();
+    checkDeviceTokenOnLoad();
 
     // Load live menu items and config from Supabase
     loadDataFromSupabase().then(async () => {
