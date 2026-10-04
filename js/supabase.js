@@ -228,6 +228,19 @@ async function sbSaveOrder(orderData) {
         console.error('[SB] saveOrder error:', error.message, error.details);
         return null;
     }
+
+    // Trigger push notification to admin devices via Edge Function
+    sbInvokeNotifyNewOrder({
+        table_number: orderData.tableNumber || 'Online',
+        customer_name: orderData.customerName || 'Guest',
+        customer_phone: orderData.customerPhone || '',
+        items: orderData.items,
+        subtotal: orderData.subtotal || 0,
+        gst: orderData.gst || 0,
+        total: orderData.total || 0,
+        notes: orderData.notes || ''
+    }).catch(e => console.warn('[SB] Background notify-new-order trigger skipped:', e));
+
     return true;
 }
 
@@ -412,3 +425,23 @@ async function sbRemoveFCMToken(token) {
     return true;
 }
 window.sbRemoveFCMToken = sbRemoveFCMToken;
+
+async function sbInvokeNotifyNewOrder(orderData) {
+    if (!_supaClient) sbInit();
+    if (!_supaClient) return false;
+    try {
+        const { data, error } = await _supaClient.functions.invoke('notify-new-order', {
+            body: orderData
+        });
+        if (error) {
+            console.warn('[SB] notify-new-order function invoke error:', error);
+            return false;
+        }
+        console.log('[SB] Push notification invoked successfully:', data);
+        return true;
+    } catch (e) {
+        console.warn('[SB] notify-new-order function exception:', e);
+        return false;
+    }
+}
+window.sbInvokeNotifyNewOrder = sbInvokeNotifyNewOrder;

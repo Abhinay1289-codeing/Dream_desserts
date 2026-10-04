@@ -145,7 +145,9 @@ serve(async (req) => {
           notification: {
             sound: 'default',
             channelId: 'high_importance_channel',
-            priority: 'high'
+            notificationPriority: 'PRIORITY_MAX',
+            defaultSound: true,
+            defaultVibrateTimings: true
           }
         }
       }
