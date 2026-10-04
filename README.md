@@ -1,4 +1,6 @@
-# Digital Menu & Ordering System
+# Digital Menu & Ordering System — Dream Desserts
+
+> ⚠️ **AI AGENT & DEVELOPER INSTRUCTIONS**: Refer to [PROJECT_INSTRUCTIONS.md](file:///d:/reastarent_saas/PROJECT_INSTRUCTIONS.md) for local APK build rules, App ID (`com.dreamdesserts.app`), and token architecture requirements.
 
 ## 🚀 Netlify Deployment Instructions
 
