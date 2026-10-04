@@ -1,13 +1,20 @@
 /**
  * Printer Utility
- * Handles ESC/POS formatting and TCP socket communication with the receipt printer.
+ * Handles ESC/POS formatting, Wi-Fi TCP Socket communication, and Web Bluetooth thermal receipt printing.
  */
 
 class ReceiptPrinter {
     constructor() {
         this.buffer = [];
+        this.connectionType = localStorage.getItem('printerConnectionType') || 'wifi'; // 'wifi' or 'bluetooth'
         this.ipAddress = localStorage.getItem('printerIp') || '';
-        this.port = 9100;
+        this.port = Number(localStorage.getItem('printerPort')) || 9100;
+        this.btDeviceName = localStorage.getItem('printerBtName') || '';
+        this.btDeviceId = localStorage.getItem('printerBtId') || '';
+
+        // Web Bluetooth state
+        this.btDevice = null;
+        this.btCharacteristic = null;
         
         // Ensure capacitor plugin is available
         this.TcpSocket = window.Capacitor?.Plugins?.TcpSocket;
@@ -16,6 +23,7 @@ class ReceiptPrinter {
     // --- ESC/POS COMMANDS ---
     
     init() {
+        this.buffer = [];
         this.buffer.push(0x1B, 0x40); // ESC @
     }
 
@@ -71,24 +79,34 @@ class ReceiptPrinter {
     // --- FORMATTING HELPERS ---
 
     buildTestReceipt() {
-        this.buffer = [];
         this.init();
         
         this.alignCenter();
         this.setTextSize(1, 1);
         this.setBold(true);
-        const restName = (window.CONFIG?.restaurantName || 'RESTAURANT NAME').toUpperCase();
+        const restName = (window.CONFIG?.restaurantName || 'DREAM DESSERTS').toUpperCase();
         this.textLine(restName);
         this.setTextSize(0, 0);
         this.setBold(false);
         this.textLine("--- THERMAL PRINTER TEST ---");
         this.separator();
         
+        const connType = (localStorage.getItem('printerConnectionType') || this.connectionType || 'wifi').toUpperCase();
         this.alignLeft();
         this.textLine(`Status: SUCCESS`);
-        this.textLine(`IP Address: ${this.ipAddress || 'Not set'}`);
-        this.textLine(`Port: ${this.port}`);
-        this.textLine(`Date/Time: ${new Date().toLocaleString()}`);
+        this.textLine(`Mode: ${connType === 'BLUETOOTH' ? '📶 BLUETOOTH' : '📡 WI-FI / LAN'}`);
+        
+        if (connType === 'BLUETOOTH') {
+            const btName = localStorage.getItem('printerBtName') || this.btDeviceName || 'Connected Printer';
+            this.textLine(`Bluetooth Device: ${btName}`);
+        } else {
+            const ip = localStorage.getItem('printerIp') || this.ipAddress;
+            const port = localStorage.getItem('printerPort') || this.port;
+            this.textLine(`IP Address: ${ip || 'Not set'}`);
+            this.textLine(`Port: ${port}`);
+        }
+        
+        this.textLine(`Date/Time: ${new Date().toLocaleString('en-IN')}`);
         this.separator();
         
         this.alignCenter();
@@ -100,18 +118,17 @@ class ReceiptPrinter {
     }
 
     buildBillReceipt(order) {
-        this.buffer = [];
         this.init();
         
         // Header
         this.alignCenter();
         this.setTextSize(1, 1);
         this.setBold(true);
-        const restName = (window.CONFIG?.restaurantName || 'RESTAURANT NAME').toUpperCase();
+        const restName = (window.CONFIG?.restaurantName || 'DREAM DESSERTS').toUpperCase();
         this.textLine(restName);
         this.setTextSize(0, 0);
         this.setBold(false);
-        this.textLine("Live Orders & Table Billing");
+        this.textLine("Live Orders & Receipt Bill");
         this.separator();
         
         // Order Info
@@ -173,6 +190,156 @@ class ReceiptPrinter {
         return this.buffer;
     }
 
+    // --- BLUETOOTH Thermal Printing (Web Bluetooth API) ---
+
+    async pairBluetoothPrinter() {
+        if (!navigator.bluetooth) {
+            return {
+                success: false,
+                message: 'Web Bluetooth API is not supported on this browser. Please use Google Chrome, Microsoft Edge, or Android Chrome.'
+            };
+        }
+
+        try {
+            console.log('[Printer] Requesting Bluetooth device scan...');
+            const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: [
+                    '000018f0-0000-1000-8000-00805f9b34fb', // ESC/POS Thermal Printer Service
+                    '00001101-0000-1000-8000-00805f9b34fb', // SPP Serial Port Profile
+                    '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip BLE SPP
+                    'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // ISSC Transparent Service
+                    '0000af00-0000-1000-8000-00805f9b34fb', // Alternate POS Printer Service
+                    '0000ff00-0000-1000-8000-00805f9b34fb'  // Custom Printer Characteristic
+                ]
+            });
+
+            if (!device) {
+                return { success: false, message: 'No Bluetooth device selected.' };
+            }
+
+            this.btDevice = device;
+            this.btDeviceName = device.name || 'Bluetooth Printer';
+            this.btDeviceId = device.id;
+
+            localStorage.setItem('printerBtName', this.btDeviceName);
+            localStorage.setItem('printerBtId', this.btDeviceId);
+
+            // Clear cached characteristic on disconnect
+            device.addEventListener('gattserverdisconnected', () => {
+                console.log('[Printer] Bluetooth device disconnected.');
+                this.btCharacteristic = null;
+            });
+
+            const characteristic = await this.getBtCharacteristic(device);
+            this.btCharacteristic = characteristic;
+
+            return {
+                success: true,
+                name: this.btDeviceName,
+                message: `Paired with ${this.btDeviceName}`
+            };
+        } catch (err) {
+            console.error('[Printer] Bluetooth pairing error:', err);
+            return {
+                success: false,
+                message: err.message || 'Bluetooth pairing failed.'
+            };
+        }
+    }
+
+    async getBtCharacteristic(device) {
+        if (!device.gatt.connected) {
+            await device.gatt.connect();
+        }
+
+        const server = device.gatt;
+        const services = await server.getPrimaryServices();
+        
+        let targetChar = null;
+
+        for (const service of services) {
+            try {
+                const characteristics = await service.getCharacteristics();
+                for (const char of characteristics) {
+                    if (char.properties.write || char.properties.writeWithoutResponse) {
+                        targetChar = char;
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.warn('[Printer] Failed reading service characteristics:', service.uuid, e);
+            }
+            if (targetChar) break;
+        }
+
+        if (!targetChar) {
+            throw new Error('No writable GATT characteristic found on printer. Ensure your Bluetooth Thermal printer is turned on.');
+        }
+
+        return targetChar;
+    }
+
+    async sendToBluetoothPrinter(bytesArray) {
+        try {
+            if (!navigator.bluetooth) {
+                return {
+                    success: false,
+                    message: 'Web Bluetooth is not supported on this browser. Use Chrome / Edge / Android Chrome.'
+                };
+            }
+
+            let char = this.btCharacteristic;
+
+            if (!char || !this.btDevice || !this.btDevice.gatt.connected) {
+                if (this.btDevice) {
+                    try {
+                        char = await this.getBtCharacteristic(this.btDevice);
+                        this.btCharacteristic = char;
+                    } catch (e) {
+                        console.log('[Printer] Reconnection failed, initiating new Bluetooth device selector...');
+                        const pairRes = await this.pairBluetoothPrinter();
+                        if (!pairRes.success) return pairRes;
+                        char = this.btCharacteristic;
+                    }
+                } else {
+                    const pairRes = await this.pairBluetoothPrinter();
+                    if (!pairRes.success) return pairRes;
+                    char = this.btCharacteristic;
+                }
+            }
+
+            if (!char) {
+                return { success: false, message: 'Could not access Bluetooth printer characteristic.' };
+            }
+
+            // Write ESC/POS data in chunks of 100 bytes to avoid BLE buffer overflow
+            const chunkSize = 100;
+            const uint8Data = new Uint8Array(bytesArray);
+            
+            for (let i = 0; i < uint8Data.length; i += chunkSize) {
+                const chunk = uint8Data.subarray(i, i + chunkSize);
+                if (char.properties.writeWithoutResponse) {
+                    await char.writeValueWithoutResponse(chunk);
+                } else {
+                    await char.writeValue(chunk);
+                }
+                await new Promise(r => setTimeout(r, 40));
+            }
+
+            return {
+                success: true,
+                message: `Receipt sent to Bluetooth printer (${this.btDeviceName || 'Paired Device'})`
+            };
+        } catch (err) {
+            console.error('[Printer] Bluetooth print error:', err);
+            return {
+                success: false,
+                message: 'Bluetooth Print Error: ' + (err.message || err)
+            };
+        }
+    }
+
     // --- COMMUNICATION ---
 
     bytesToHex(bytesArray) {
@@ -180,6 +347,13 @@ class ReceiptPrinter {
     }
 
     async sendToPrinter(bytesArray, targetIp = null, targetPort = null) {
+        const type = localStorage.getItem('printerConnectionType') || this.connectionType || 'wifi';
+
+        if (type === 'bluetooth') {
+            return await this.sendToBluetoothPrinter(bytesArray);
+        }
+
+        // Default Wi-Fi / LAN TCP Socket Print
         const ip = targetIp || localStorage.getItem('printerIp') || this.ipAddress;
         const port = Number(targetPort || localStorage.getItem('printerPort') || this.port);
         
@@ -191,7 +365,7 @@ class ReceiptPrinter {
         const TcpSocket = window.Capacitor?.Plugins?.TcpSocket;
         if (!TcpSocket) {
             console.warn('TCP Socket plugin not available. (Running in browser?)');
-            return { success: false, message: 'TCP Socket plugin available on Android device only.' };
+            return { success: false, message: 'Wi-Fi TCP Socket available on Android App. For Browser printing, select Bluetooth mode.' };
         }
 
         try {
@@ -211,7 +385,7 @@ class ReceiptPrinter {
             });
 
             await TcpSocket.disconnect({ client: conn.client });
-            return { success: true, message: 'Receipt printed successfully!' };
+            return { success: true, message: 'Receipt printed successfully over Wi-Fi!' };
         } catch (error) {
             console.error('Printer connection error:', error);
             return { success: false, message: 'Printer Connection Failed: ' + (error.message || error) };

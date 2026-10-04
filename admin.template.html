@@ -8,8 +8,8 @@
     <!-- Load environment variables for both local and Netlify -->
     <script>
         window.ENV = {
-            SUPABASE_URL: 'YOUR_SUPABASE_URL',
-            SUPABASE_KEY: 'YOUR_SUPABASE_ANON_KEY'
+            SUPABASE_URL: 'https://puwkpflzgnrontluvicn.supabase.co',
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d2twZmx6Z25yb250bHV2aWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDA1ODcsImV4cCI6MjEwNjYxNjU4N30.Xyr6DjK64ZJxC4QadjYXDCaH7r79VjM8PaaLrJ9Cn84'
         };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -366,12 +366,37 @@
                             <span class="switch-slider"></span>
                         </label>
                     </div>
-                    <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0;">
-                        <span>Show Soup Free Offer</span>
-                        <label class="switch-container">
-                            <input type="checkbox" id="settingsSoupFreeOffer" checked>
-                            <span class="switch-slider"></span>
-                        </label>
+                    <div style="margin: 18px 0 10px 0; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 14px;">
+                        <h4 style="margin-bottom: 12px; font-weight: 800;">🖨️ Thermal Receipt Printer Setup</h4>
+                        <div class="form-group">
+                            <label for="adminPrinterConnectionType">Connection Mode</label>
+                            <select id="adminPrinterConnectionType" class="field-input" onchange="toggleAdminPrinterFields(this.value)">
+                                <option value="wifi">📡 Wi-Fi / LAN (Network IP)</option>
+                                <option value="bluetooth">📶 Bluetooth (Wireless Thermal Printer)</option>
+                            </select>
+                        </div>
+                        <div id="adminWifiPrinterBox">
+                            <div class="form-group" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                                <div>
+                                    <label for="adminPrinterIp">Printer IP</label>
+                                    <input type="text" id="adminPrinterIp" class="field-input" placeholder="e.g. 192.168.1.100">
+                                </div>
+                                <div>
+                                    <label for="adminPrinterPort">Port</label>
+                                    <input type="number" id="adminPrinterPort" class="field-input" value="9100">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="adminBtPrinterBox" style="display: none;">
+                            <div class="form-group">
+                                <label>Bluetooth Thermal Printer</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="adminBtName" class="field-input" placeholder="No printer paired" readonly>
+                                    <button type="button" class="btn-primary" onclick="pairAdminBtPrinter()" style="white-space: nowrap; padding: 8px 12px;">🔍 Pair</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-ghost" onclick="testAdminPrinter()" style="width: 100%; margin-top: 6px;">🖨️ Send Test Receipt</button>
                     </div>
                     <button type="submit" class="btn-primary" style="margin-top: 14px; width: 100%;">Save Settings</button>
                 </form>
@@ -394,6 +419,7 @@
     <script src="js/menu-data.js?v=4"></script>
     <script src="js/supabase.js?v=4"></script>
     <script src="js/app.js?v=4"></script>
+    <script src="js/printer.js?v=4"></script>
     <script src="js/admin-app.js?v=4"></script>
 
 <!-- Service Worker -->

@@ -1240,6 +1240,53 @@ document.getElementById("adminModalCloseBackdrop")?.addEventListener("click", cl
 const settingsModal = document.getElementById("adminSettingsModal");
 const settingsForm = document.getElementById("adminSettingsForm");
 
+function toggleAdminPrinterFields(type) {
+    const wifiBox = document.getElementById('adminWifiPrinterBox');
+    const btBox = document.getElementById('adminBtPrinterBox');
+    if (type === 'bluetooth') {
+        if (wifiBox) wifiBox.style.display = 'none';
+        if (btBox) btBox.style.display = 'block';
+    } else {
+        if (wifiBox) wifiBox.style.display = 'block';
+        if (btBox) btBox.style.display = 'none';
+    }
+}
+
+async function pairAdminBtPrinter() {
+    showToast('🔍 Scanning for Bluetooth printers...');
+    const res = await window.printer.pairBluetoothPrinter();
+    if (res.success) {
+        if (document.getElementById('adminBtName')) {
+            document.getElementById('adminBtName').value = res.name;
+        }
+        showToast(`✅ Paired: ${res.name}`);
+    } else {
+        showToast(`❌ ${res.message}`, true);
+    }
+}
+
+async function testAdminPrinter() {
+    const type = document.getElementById('adminPrinterConnectionType')?.value || 'wifi';
+    const ip = (document.getElementById('adminPrinterIp')?.value || '').trim();
+    const port = (document.getElementById('adminPrinterPort')?.value || '').trim() || '9100';
+
+    localStorage.setItem('printerConnectionType', type);
+    if (ip) localStorage.setItem('printerIp', ip);
+    if (port) localStorage.setItem('printerPort', port);
+
+    showToast(type === 'bluetooth' ? '⏳ Connecting to Bluetooth printer...' : '⏳ Connecting to Wi-Fi printer...');
+    const res = await window.printer.testPrint(ip, port);
+    if (res.success) {
+        showToast('✅ ' + (res.message || 'Test print sent!'));
+    } else {
+        showToast('❌ ' + res.message, true);
+    }
+}
+
+window.toggleAdminPrinterFields = toggleAdminPrinterFields;
+window.pairAdminBtPrinter = pairAdminBtPrinter;
+window.testAdminPrinter = testAdminPrinter;
+
 function openSettingsForm() {
     document.getElementById("settingsPhone").value = CONFIG.whatsappPhone || "";
     document.getElementById("settingsTagline").value = CONFIG.tagline || "";
@@ -1249,7 +1296,25 @@ function openSettingsForm() {
     document.getElementById("settingsChineseComingSoon").checked = CONFIG.chineseComingSoon !== false;
     document.getElementById("settingsSoupFreeOffer").checked = CONFIG.soupFreeOffer !== false;
     document.getElementById("settingsGstEnabled").checked = CONFIG.gstEnabled === true;
-    document.getElementById("settingsWaiterEnabled").checked = CONFIG.waiterEnabled === true;
+    if (document.getElementById("settingsWaiterEnabled")) {
+        document.getElementById("settingsWaiterEnabled").checked = CONFIG.waiterEnabled === true;
+    }
+
+    const pType = localStorage.getItem('printerConnectionType') || 'wifi';
+    if (document.getElementById('adminPrinterConnectionType')) {
+        document.getElementById('adminPrinterConnectionType').value = pType;
+    }
+    toggleAdminPrinterFields(pType);
+
+    if (document.getElementById('adminPrinterIp')) {
+        document.getElementById('adminPrinterIp').value = localStorage.getItem('printerIp') || '';
+    }
+    if (document.getElementById('adminPrinterPort')) {
+        document.getElementById('adminPrinterPort').value = localStorage.getItem('printerPort') || '9100';
+    }
+    if (document.getElementById('adminBtName')) {
+        document.getElementById('adminBtName').value = localStorage.getItem('printerBtName') || '';
+    }
 
     settingsModal.classList.add("open");
     settingsModal.setAttribute("aria-hidden", "false");
@@ -1267,7 +1332,17 @@ if (settingsForm) {
         CONFIG.biryanisComingSoon = document.getElementById("settingsBiryanisComingSoon").checked;
         CONFIG.chineseComingSoon = document.getElementById("settingsChineseComingSoon").checked;
         CONFIG.soupFreeOffer = document.getElementById("settingsSoupFreeOffer").checked;
-        CONFIG.waiterEnabled = document.getElementById("settingsWaiterEnabled").checked;
+        if (document.getElementById("settingsWaiterEnabled")) {
+            CONFIG.waiterEnabled = document.getElementById("settingsWaiterEnabled").checked;
+        }
+
+        const pType = document.getElementById('adminPrinterConnectionType')?.value || 'wifi';
+        const pIp = (document.getElementById('adminPrinterIp')?.value || '').trim();
+        const pPort = (document.getElementById('adminPrinterPort')?.value || '').trim() || '9100';
+
+        localStorage.setItem('printerConnectionType', pType);
+        localStorage.setItem('printerIp', pIp);
+        localStorage.setItem('printerPort', pPort);
 
         await saveConfig();
         applyBrand();
