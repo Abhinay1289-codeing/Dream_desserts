@@ -1,6 +1,6 @@
 {
-  "versionCode": 18,
-  "versionName": "v1.5.9",
-  "apkUrl": "https://github.com/your-username/restaurant-menu-app/raw/master/app.apk",
-  "changelog": "Factory reset complete. Ready for new client onboarding."
+  "versionCode": 20,
+  "versionName": "v2.0.1",
+  "apkUrl": "https://raw.githubusercontent.com/Abhinay1289-codeing/Dream_desserts/main/Restaurant_Orders_App.apk",
+  "changelog": "Single Master QR Code, Device-bound Token Sessions (Token #1, #2, #3...), FCM Push Notification Payload Fixes & Bluetooth Thermal Printer Setup."
 }
