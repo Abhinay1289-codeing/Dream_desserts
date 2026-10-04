@@ -1,4 +1,4 @@
-# Cafe Coffee Delite — Digital Menu
+# Digital Menu & Ordering System
 
 ## 🚀 Netlify Deployment Instructions
 

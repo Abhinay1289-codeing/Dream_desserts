@@ -1,5 +1,5 @@
 /**
- * Cafe Coffee Delite — Supabase Client & DB Helpers
+ * Supabase Client & DB Helpers
  *
  * ================================================================
  *  IMPORTANT: FIRST-TIME SETUP
@@ -17,21 +17,30 @@ const SUPABASE_KEY = window.ENV?.SUPABASE_KEY || '';
 window.sb = null;
 let _supaClient = null;
 
-try {
-    if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_URL !== 'https://your-project-id.supabase.co' && SUPABASE_KEY && SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY' && SUPABASE_KEY !== 'your-anon-public-key') {
-        _supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true,
-                storageKey: 'ccd_customer_auth_v1'
-            }
-        });
-        window.sb = _supaClient;
+function sbInit() {
+    if (_supaClient) return _supaClient;
+    const url = window.ENV?.SUPABASE_URL || SUPABASE_URL;
+    const key = window.ENV?.SUPABASE_KEY || SUPABASE_KEY;
+    if (url && url !== 'YOUR_SUPABASE_URL' && !url.includes('your-project') && key && key !== 'YOUR_SUPABASE_ANON_KEY' && !key.includes('your-anon')) {
+        try {
+            _supaClient = supabase.createClient(url, key, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storageKey: 'restaurant_customer_auth_v1'
+                }
+            });
+            window.sb = _supaClient;
+            return _supaClient;
+        } catch (e) {
+            console.error('[SB] Initialization error:', e);
+        }
     }
-} catch (e) {
-    console.log('Supabase not configured yet, using local data');
+    return null;
 }
+sbInit();
+window.sbInit = sbInit;
 
 /* ===== MENU ITEMS ===== */
 
@@ -153,11 +162,14 @@ let _lastSavedOrderHash = '';
 
 async function sbSaveOrder(orderData) {
     if (!_supaClient) {
+        sbInit();
+    }
+    if (!_supaClient) {
         console.error('[SB] Supabase client not initialized');
-        return null;
+        throw new Error('Database connection not initialized. Unable to send order to kitchen server.');
     }
 
-    const currentHash = `${orderData.tableNumber}_${orderData.total}_${JSON.stringify(orderData.items)}`;
+    const currentHash = `${orderData.user_id || orderData.customerPhone || ''}_${orderData.tableNumber}_${orderData.total}_${JSON.stringify(orderData.items)}`;
     const now = Date.now();
     if (currentHash === _lastSavedOrderHash && (now - _lastSavedOrderTime) < 3000) {
         console.warn('[SB] Duplicate order submission prevented by client lock');
@@ -179,33 +191,33 @@ async function sbSaveOrder(orderData) {
         status: 'pending'
     };
 
-    // Standard payload (includes order_type)
+    // Standard payload (includes order_type and optional delivery/payment fields)
     const standardPayload = {
         ...legacyCorePayload,
         order_type: orderData.order_type || 'dining'
     };
+    if (orderData.address) standardPayload.address = orderData.address;
+    if (orderData.landmark) standardPayload.landmark = orderData.landmark;
+    if (orderData.latitude) standardPayload.latitude = orderData.latitude;
+    if (orderData.longitude) standardPayload.longitude = orderData.longitude;
+    if (orderData.utr_number) standardPayload.utr_number = orderData.utr_number;
+    if (orderData.payment_proof_url) standardPayload.payment_proof_url = orderData.payment_proof_url;
 
-    // Full payload including optional delivery/payment/user fields if provided
+    // Full payload including user_id if provided
     const fullPayload = { ...standardPayload };
     if (orderData.user_id) fullPayload.user_id = orderData.user_id;
-    if (orderData.address) fullPayload.address = orderData.address;
-    if (orderData.landmark) fullPayload.landmark = orderData.landmark;
-    if (orderData.latitude) fullPayload.latitude = orderData.latitude;
-    if (orderData.longitude) fullPayload.longitude = orderData.longitude;
-    if (orderData.utr_number) fullPayload.utr_number = orderData.utr_number;
-    if (orderData.payment_proof_url) fullPayload.payment_proof_url = orderData.payment_proof_url;
 
     // 1. Attempt insert with full payload
     let { data, error } = await _supaClient.from('orders').insert([fullPayload]);
 
-    // 2. Fallback 1: If extra delivery/payment/user columns are missing, retry with standardPayload
-    if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('column')))) {
-        console.warn('[SB] Retrying with standard payload...', error.message);
+    // 2. Fallback 1: If user_id or extra optional column is missing in DB schema, retry with standardPayload (without user_id)
+    if (error && (error.code === 'PGRST204' || (error.message && (error.message.includes('column') || error.message.includes('user_id'))))) {
+        console.warn('[SB] Retrying without user_id column...', error.message);
         const retry1 = await _supaClient.from('orders').insert([standardPayload]);
         error = retry1.error;
     }
 
-    // 3. Fallback 2: If order_type column is ALSO missing in legacy schema, retry with legacyCorePayload
+    // 3. Fallback 2: If order_type or extra columns are ALSO missing in legacy schema, retry with legacyCorePayload
     if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('column')))) {
         console.warn('[SB] Retrying with legacy core payload...', error.message);
         const retry2 = await _supaClient.from('orders').insert([legacyCorePayload]);
@@ -234,21 +246,46 @@ async function sbGetOrders(limit = 200) {
 
 async function sbGetCustomerOrders(phone, userId) {
     if (!_supaClient) return [];
+    const cleanPhone = phone ? String(phone).trim() : null;
+    if (!userId && !cleanPhone) return [];
+
     try {
-        const { data, error } = await _supaClient
+        let query = _supaClient
             .from('orders')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(50);
-        if (error || !data) return [];
-        
-        // Filter by userId or phone number in JS if database RLS/columns vary
-        return data.filter(o => {
-            if (userId && o.user_id === userId) return true;
-            if (phone && String(o.customer_phone).trim() === String(phone).trim()) return true;
-            return false;
-        });
+
+        if (userId && cleanPhone) {
+            query = query.or(`user_id.eq.${userId},customer_phone.eq.${cleanPhone}`);
+        } else if (userId) {
+            query = query.eq('user_id', userId);
+        } else {
+            query = query.eq('customer_phone', cleanPhone);
+        }
+
+        let { data, error } = await query;
+
+        // Fallback: If user_id column is missing in DB schema cache, retry querying by customer_phone only
+        if (error && cleanPhone && (error.code === 'PGRST204' || (error.message && (error.message.includes('user_id') || error.message.includes('column'))))) {
+            console.warn('[SB] getCustomerOrders fallback to customer_phone:', error.message);
+            const fallback = await _supaClient
+                .from('orders')
+                .select('*')
+                .eq('customer_phone', cleanPhone)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            data = fallback.data;
+            error = fallback.error;
+        }
+
+        if (error || !data) {
+            if (error) console.error('[SB] getCustomerOrders error:', error.message);
+            return [];
+        }
+        return data;
     } catch (e) {
+        console.error('[SB] getCustomerOrders exception:', e);
         return [];
     }
 }
@@ -262,22 +299,28 @@ async function sbUpdateOrderStatus(id, status) {
 
 async function sbClearTableOrders(tableNumber) {
     if (!_supaClient) return false;
-    const { error } = await _supaClient
-        .from('orders')
-        .update({ status: 'billed' })
-        .eq('table_number', String(tableNumber))
-        .neq('status', 'billed');
+    const str = String(tableNumber || '').trim();
+    let query = _supaClient.from('orders').update({ status: 'billed' }).neq('status', 'billed');
+    if (str.startsWith('online_')) {
+        query = query.eq('id', str.replace('online_', ''));
+    } else {
+        query = query.eq('table_number', str);
+    }
+    const { error } = await query;
     if (error) { console.error('[SB] clearTableOrders:', error.message); return false; }
     return true;
 }
 
 async function sbCancelTableOrders(tableNumber) {
     if (!_supaClient) return false;
-    const { error } = await _supaClient
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('table_number', String(tableNumber))
-        .neq('status', 'billed');
+    const str = String(tableNumber || '').trim();
+    let query = _supaClient.from('orders').update({ status: 'cancelled' }).neq('status', 'billed');
+    if (str.startsWith('online_')) {
+        query = query.eq('id', str.replace('online_', ''));
+    } else {
+        query = query.eq('table_number', str);
+    }
+    const { error } = await query;
     if (error) { console.error('[SB] cancelTableOrders:', error.message); return false; }
     return true;
 }
@@ -293,7 +336,7 @@ async function sbResetMenuData() {
 
 async function sbClearAllOrders() {
     if (!_supaClient) return false;
-    const { error } = await _supaClient.from('orders').delete().neq('id', 0);
+    const { error } = await _supaClient.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) { console.error('[SB] clearAllOrders:', error.message); return false; }
     return true;
 }
@@ -321,26 +364,35 @@ function sbSubscribeCategoryOverridesChanges(callback) {
         .subscribe();
 }
 
-let _orderChannel = null;
+const _activeOrderChannels = {};
 
-function sbSubscribeOrderChanges(callback) {
+function sbSubscribeOrderChanges(callback, customChannelName) {
     if (!_supaClient) return null;
-    if (_orderChannel) {
-        return _orderChannel;
+    const channelName = customChannelName || 'orders_realtime_single';
+    
+    // Clean up previous channel with same name if exists
+    if (_activeOrderChannels[channelName]) {
+        try {
+            _supaClient.removeChannel(_activeOrderChannels[channelName]);
+        } catch (e) {}
     }
+
     try {
-        _orderChannel = _supaClient.channel('orders_realtime_single')
+        const channel = _supaClient.channel(channelName)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback);
-        _orderChannel.subscribe();
+        channel.subscribe();
+        _activeOrderChannels[channelName] = channel;
+        return channel;
     } catch (e) {
         console.warn('[SB] Realtime subscribe error:', e);
+        return null;
     }
-    return _orderChannel;
 }
 
 /* ===== PUSH NOTIFICATIONS ===== */
 async function sbSaveFCMToken(token) {
-    if (!_supaClient) return false;
+    if (!_supaClient) sbInit();
+    if (!_supaClient || !token) return false;
     const { error } = await _supaClient.from('admin_devices').upsert(
         { fcm_token: token, updated_at: new Date().toISOString() },
         { onConflict: 'fcm_token' }
@@ -350,3 +402,13 @@ async function sbSaveFCMToken(token) {
     return true;
 }
 window.sbSaveFCMToken = sbSaveFCMToken;
+
+async function sbRemoveFCMToken(token) {
+    if (!_supaClient) sbInit();
+    if (!_supaClient || !token) return false;
+    const { error } = await _supaClient.from('admin_devices').delete().eq('fcm_token', token);
+    if (error) { console.error('[SB] removeFCMToken:', error.message); return false; }
+    console.log('[SB] FCM Token removed from admin_devices');
+    return true;
+}
+window.sbRemoveFCMToken = sbRemoveFCMToken;

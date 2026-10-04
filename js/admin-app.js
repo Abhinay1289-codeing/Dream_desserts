@@ -1,5 +1,5 @@
 /**
- * Cafe Coffee Delite — Admin Panel Visual Editor Script
+ * Admin Panel Visual Editor Script
  */
 
 /* ===== HELPER: Format WhatsApp Number ===== */
@@ -931,7 +931,7 @@ function hookCategoryRenaming() {
     window.renderCategories = function() {
         originalRenderCategories();
         document.querySelectorAll("#categoryNav .cat-pill").forEach(pill => {
-            const catId = pill.dataset.cat;
+            const catId = pill.dataset.mainCat || pill.dataset.subCat || pill.dataset.cat;
             if (catId === "all" || catId === "veg") return;
             
             pill.title = "Double-click to rename this category";
@@ -1217,7 +1217,7 @@ document.getElementById("adminDeleteItemBtn")?.addEventListener("click", async (
     if (!name) return;
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
         const allItems = getItems().filter(i => i.name !== name);
-        await saveItems(allItems);
+        await saveItems(allItems, name);
         closeItemForm();
         renderMenu();
         showToast("Item deleted");

@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
-    <title>Admin Portal | Cafe Coffee Delite</title>
+    <title>Admin Portal | Restaurant Control Panel</title>
     <!-- Load environment variables for both local and Netlify -->
     <script>
         window.ENV = {
-            SUPABASE_URL: 'https://luhwhzsyjsiwdmwrohwc.supabase.co',
-            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0'
+            SUPABASE_URL: 'https://puwkpflzgnrontluvicn.supabase.co',
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d2twZmx6Z25yb250bHV2aWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDA1ODcsImV4cCI6MjEwNjYxNjU4N30.Xyr6DjK64ZJxC4QadjYXDCaH7r79VjM8PaaLrJ9Cn84'
         };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,12 +23,12 @@
     <div id="adminLoginOverlay" class="admin-login-overlay">
         <div class="admin-login-card">
             <img src="assets/logo.jpeg" class="admin-login-logo" alt="Logo">
-            <h2>Cafe Coffee Delite</h2>
-            <p>Admin Control Panel</p>
+            <h2>Admin Portal</h2>
+            <p>Restaurant Control Panel</p>
             <form id="adminLoginForm">
                 <div class="form-group">
-                    <label for="adminIdInput">Admin ID</label>
-                    <input type="text" id="adminIdInput" placeholder="Enter Admin ID" required autocomplete="username">
+                    <label for="adminIdInput">Admin Email / ID</label>
+                    <input type="text" id="adminIdInput" placeholder="Enter Admin Email" required autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label for="adminPassInput">Password</label>
@@ -36,7 +36,7 @@
                 </div>
                 <button type="submit" class="btn-primary" style="margin-top: 12px; width: 100%;">Sign In</button>
             </form>
-            <div id="loginError" class="login-error is-hidden">Invalid Admin ID or Password</div>
+            <div id="loginError" class="login-error is-hidden">Invalid Admin Credentials</div>
             <a href="index.html" class="login-back-link">← Return to Guest Menu</a>
         </div>
     </div>
@@ -66,17 +66,17 @@
         <!-- Hero -->
         <section class="hero-clean admin-editable-hero" id="heroSection" title="Click anywhere on background to edit image">
             <div class="hero-clean-bg">
-                <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200" alt="Cafe Coffee Delite Interior" loading="eager">
+                <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200" alt="Restaurant Interior" loading="eager">
                 <div class="admin-edit-overlay-label">📷 Edit Background Image</div>
             </div>
             <div class="hero-clean-content">
                 <span class="hero-offers-label">✨ Today&apos;s Offers</span>
                 <div class="hero-brand">
                     <div class="hero-clean-logo" aria-hidden="true">
-                        <img src="assets/logo.jpeg" class="hero-logo" alt="Cafe Coffee Delite - Premium Coffee Experience" draggable="false">
+                        <img src="assets/logo.jpeg" class="hero-logo" alt="Restaurant Logo" draggable="false">
                     </div>
                     <div>
-                        <h2 class="hero-clean-name">Cafe Coffee Delite</h2>
+                        <h2 class="hero-clean-name">Your Restaurant</h2>
                         <p class="hero-clean-tagline" id="heroTagline">Sip, Savour, Smile</p>
                     </div>
                 </div>

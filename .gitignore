@@ -5,6 +5,9 @@
 .env.test.local
 .env.production.local
 firebase-service-account.json
+*service-account*.json
+*.pem
+*.key
 
 # Android & Build Outputs
 android/app/build/

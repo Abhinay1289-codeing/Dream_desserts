@@ -1,4 +1,4 @@
-package com.cafecoffeedelite.orders;
+package com.restaurant.orders;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -19,8 +19,9 @@ public class MyFirebaseMessagingService extends MessagingService {
         
         android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
         String isOnlineStr = prefs.getString("isDeviceOnline", "true");
-        if ("false".equals(isOnlineStr)) {
-            Log.d("PushService", "Device is offline. Ignoring push notification.");
+        String powerStateStr = prefs.getString("deviceOrdersPowerState", "on");
+        if ("false".equals(isOnlineStr) || "off".equals(powerStateStr)) {
+            Log.d("PushService", "Device power state is OFF. Ignoring push notification.");
             return;
         }
         
@@ -104,7 +105,7 @@ public class MyFirebaseMessagingService extends MessagingService {
 
             // Accept PendingIntent
             Intent acceptIntent = new Intent(this, OrderActionReceiver.class);
-            acceptIntent.setAction("com.cafecoffeedelite.orders.ACTION_ACCEPT");
+            acceptIntent.setAction("com.restaurant.orders.ACTION_ACCEPT");
             if (orderIdStr != null) acceptIntent.putExtra("orderId", orderIdStr);
             PendingIntent acceptPendingIntent = PendingIntent.getBroadcast(
                     this,
@@ -115,7 +116,7 @@ public class MyFirebaseMessagingService extends MessagingService {
 
             // Decline PendingIntent
             Intent declineIntent = new Intent(this, OrderActionReceiver.class);
-            declineIntent.setAction("com.cafecoffeedelite.orders.ACTION_DECLINE");
+            declineIntent.setAction("com.restaurant.orders.ACTION_DECLINE");
             if (orderIdStr != null) declineIntent.putExtra("orderId", orderIdStr);
             PendingIntent declinePendingIntent = PendingIntent.getBroadcast(
                     this,

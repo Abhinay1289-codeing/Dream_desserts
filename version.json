@@ -1,6 +1,6 @@
 {
-  "versionCode": 14,
-  "versionName": "v1.5.5",
-  "apkUrl": "https://github.com/Abhinay1289-codeing/cafe-coffee-delite/raw/master/Cafe_Orders_Debug.apk",
-  "changelog": "Added tab navigation for Dining vs Online orders. Improved online order categorisation. Fixed modal UI text visibility issues."
+  "versionCode": 19,
+  "versionName": "v2.0.0",
+  "apkUrl": "./Restaurant_Orders_App.apk",
+  "changelog": "Clean template update with refreshed web assets & multi-tenant SaaS integration."
 }

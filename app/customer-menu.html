@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex, nofollow">
-    <title>Live Table Orders | Cafe Coffee Delite</title>
+    <title>Live Table Orders | Kitchen Dashboard</title>
     <!-- Load environment variables for both local and Netlify -->
     <script>
         window.ENV = {
-            SUPABASE_URL: 'https://luhwhzsyjsiwdmwrohwc.supabase.co',
-            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0'
+            SUPABASE_URL: 'YOUR_SUPABASE_URL',
+            SUPABASE_KEY: 'YOUR_SUPABASE_ANON_KEY'
         };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -617,7 +617,7 @@
     <header class="dash-header">
         <div class="dash-logo">
             <img src="assets/logo.jpeg" alt="Logo">
-            <span>Cafe Delite</span>
+            <span>Restaurant Orders</span>
             <span class="dash-badge">Live Orders</span>
         </div>
         <div class="dash-actions">
@@ -732,12 +732,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>
     <script>
-        // AUTHENTICATION LOGIC
-        function checkAuth() {
-            const isAuth = localStorage.getItem('cafeOrderAdminAuth') === 'true' || sessionStorage.getItem('cafeOrderAdminAuth') === 'true';
+        // AUTHENTICATION LOGIC (Supabase Auth & Salted Hash Verification)
+        async function checkAuth() {
             const overlay = document.getElementById('authOverlay');
+            if (!overlay) return;
+
+            if (window.sb && window.sb.auth) {
+                try {
+                    const { data: { session } } = await window.sb.auth.getSession();
+                    if (session) {
+                        overlay.classList.add('hidden');
+                        unlockAudio();
+                        loadOrders();
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[Auth] Session check exception:', e);
+                }
+            }
+
+            const isAuth = localStorage.getItem('cafeOrderAdminAuth') === 'true' || sessionStorage.getItem('cafeOrderAdminAuth') === 'true';
             if (isAuth) {
                 overlay.classList.add('hidden');
+                unlockAudio();
+                loadOrders();
             } else {
                 overlay.classList.remove('hidden');
             }
@@ -748,13 +766,52 @@
             if (input) input.type = input.type === 'password' ? 'text' : 'password';
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             if (e) e.preventDefault();
-            const id = (document.getElementById('userIdInput')?.value || '').trim().toLowerCase();
+            const id = (document.getElementById('userIdInput')?.value || '').trim();
             const pass = (document.getElementById('userPassInput')?.value || '').trim();
             const errEl = document.getElementById('authErrorMsg');
+            const submitBtn = document.querySelector('.auth-btn');
 
-            if (id === 'adminorderpage' && (pass === 'OrderPage@1234' || pass.toLowerCase() === 'orderpage@1234')) {
+            if (!id || !pass) return false;
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '⏳ Authenticating...';
+            }
+
+            try {
+                if (window.sb && window.sb.auth) {
+                    const email = id.includes('@') ? id : `${id.toLowerCase()}@restaurant.com`;
+                    const { data, error } = await window.sb.auth.signInWithPassword({
+                        email: email,
+                        password: pass
+                    });
+
+                    if (!error && data.session) {
+                        localStorage.setItem('cafeOrderAdminAuth', 'true');
+                        sessionStorage.setItem('cafeOrderAdminAuth', 'true');
+                        if (errEl) errEl.style.display = 'none';
+                        document.getElementById('authOverlay')?.classList.add('hidden');
+                        showToast('🔑 Successfully authenticated via Supabase!');
+                        unlockAudio();
+                        loadOrders();
+                        return false;
+                    }
+                }
+            } catch (err) {
+                console.error('[Auth] Login exception:', err);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '🔐 Unlock Orders Dashboard';
+                }
+            }
+
+            const inputHash = await sha256Hex(`${id.toLowerCase()}:${pass}`);
+            const validHash = '9f14b1749212c3419b8bc0a7b8ae95d8ff00efc3ed282e8bbc92a3ab8e424c8f';
+
+            if (inputHash === validHash) {
                 localStorage.setItem('cafeOrderAdminAuth', 'true');
                 sessionStorage.setItem('cafeOrderAdminAuth', 'true');
                 if (errEl) errEl.style.display = 'none';
@@ -771,7 +828,18 @@
             return false;
         }
 
-        function handleLogout() {
+        async function sha256Hex(str) {
+            if (window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function') {
+                const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            return '';
+        }
+
+        async function handleLogout() {
+            if (window.sb && window.sb.auth) {
+                try { await window.sb.auth.signOut(); } catch (e) {}
+            }
             localStorage.removeItem('cafeOrderAdminAuth');
             sessionStorage.removeItem('cafeOrderAdminAuth');
             checkAuth();
@@ -1269,7 +1337,7 @@
 
             document.getElementById('modalActions').innerHTML = `
                 ${stepBtnHtml}
-                <button class="btn-bill-clear" onclick="clearSelectedTable()">💳 Bill & Clear Table (₹${Math.round(grandTotalAmt)})</button>
+                <button class="btn-bill-clear" onclick="clearSelectedTable()">💳 Clear Table (₹${Math.round(grandTotalAmt)})</button>
                 <button class="btn-bill-clear" style="background: linear-gradient(135deg, #dc2626, #b91c1c); margin-top: 6px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);" onclick="cancelSelectedTable()">🚫 Cancel Order</button>
             `;
 

@@ -1,5 +1,6 @@
-package com.cafecoffeedelite.orders;
+package com.restaurant.orders;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -16,8 +17,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class MainActivity extends BridgeActivity {
-    private static final String SUPA_URL = "https://luhwhzsyjsiwdmwrohwc.supabase.co/rest/v1/admin_devices";
-    private static final String SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0";
+    private static final String SUPA_URL = "https://puwkpflzgnrontluvicn.supabase.co/rest/v1/admin_devices";
+    private static final String SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d2twZmx6Z25yb250bHV2aWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDA1ODcsImV4cCI6MjEwNjYxNjU4N30.Xyr6DjK64ZJxC4QadjYXDCaH7r79VjM8PaaLrJ9Cn84";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -58,6 +59,16 @@ public class MainActivity extends BridgeActivity {
             String token = task.getResult();
             Log.d("MainActivity", "Native FCM Token: " + token);
             
+            android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            String isOnlineStr = prefs.getString("isDeviceOnline", "true");
+            String powerStateStr = prefs.getString("deviceOrdersPowerState", "on");
+
+            if ("false".equals(isOnlineStr) || "off".equals(powerStateStr)) {
+                Log.d("MainActivity", "Device power state is OFF. Removing FCM Token from Supabase...");
+                new Thread(() -> removeTokenFromSupabase(token)).start();
+                return;
+            }
+
             new Thread(() -> {
                 try {
                     URL url = new URL(SUPA_URL);
@@ -84,5 +95,19 @@ public class MainActivity extends BridgeActivity {
                 }
             }).start();
         });
+    }
+
+    private void removeTokenFromSupabase(String token) {
+        try {
+            URL url = new URL(SUPA_URL + "?fcm_token=eq." + token);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("DELETE");
+            conn.setRequestProperty("apikey", SUPA_KEY);
+            conn.setRequestProperty("Authorization", "Bearer " + SUPA_KEY);
+            int code = conn.getResponseCode();
+            Log.d("MainActivity", "Supabase Token Remove Response Code: " + code);
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error removing token from Supabase", e);
+        }
     }
 }

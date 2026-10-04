@@ -40,10 +40,13 @@ Object.values(templateMap).forEach(templateFile => {
   }
 });
 
-// Now inject env vars into the actual HTML files from templates
+// Now inject env vars into the actual HTML files from templates (both in root and app/ for Capacitor)
 Object.entries(templateMap).forEach(([targetFile, templateFile]) => {
   const templatePath = path.join(__dirname, '..', templateFile);
-  const targetPath = path.join(__dirname, '..', targetFile);
+  const targetPaths = [
+    path.join(__dirname, '..', targetFile),
+    path.join(__dirname, '..', 'app', targetFile)
+  ];
   
   if (fs.existsSync(templatePath)) {
     let html = fs.readFileSync(templatePath, 'utf8');
@@ -65,7 +68,12 @@ Object.entries(templateMap).forEach(([targetFile, templateFile]) => {
     html = html.replace('YOUR_SUPABASE_ANON_KEY', useKey);
     html = html.replace('YOUR_GOOGLE_MAPS_API_KEY', useMapsKey);
     
-    fs.writeFileSync(targetPath, html, 'utf8');
-    console.log(`✅ Injected env vars into ${targetFile}`);
+    targetPaths.forEach(targetPath => {
+      const dir = path.dirname(targetPath);
+      if (fs.existsSync(dir)) {
+        fs.writeFileSync(targetPath, html, 'utf8');
+        console.log(`✅ Injected env vars into ${path.relative(path.join(__dirname, '..'), targetPath)}`);
+      }
+    });
   }
 });

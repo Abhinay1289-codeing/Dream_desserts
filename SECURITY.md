@@ -1,7 +1,7 @@
-# Security Audit Report: Cafe Coffee Delite
+# Security Audit Report: Digital Menu Application
 
 ## Executive Summary
-This document presents a full security audit of the Cafe Coffee Delite digital menu application. All critical, high, and medium vulnerabilities found during the audit have been remediated according to industry best practices and OWASP Top 10 guidelines.
+This document presents a full security audit of the digital menu application. All critical, high, and medium vulnerabilities found during the audit have been remediated according to industry best practices and OWASP Top 10 guidelines.
 
 ---
 

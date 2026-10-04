@@ -1,6 +1,6 @@
 {
-  "appId": "com.cafecoffeedelite.orders",
-  "appName": "Cafe Orders",
+  "appId": "com.restaurant.orders",
+  "appName": "Restaurant Orders",
   "webDir": "app",
   "android": {
     "allowMixedContent": true,

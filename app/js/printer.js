@@ -1,5 +1,5 @@
 /**
- * Cafe Coffee Delite - Printer Utility
+ * Printer Utility
  * Handles ESC/POS formatting and TCP socket communication with the receipt printer.
  */
 
@@ -50,8 +50,12 @@ class ReceiptPrinter {
     }
 
     text(str) {
-        for (let i = 0; i < str.length; i++) {
-            this.buffer.push(str.charCodeAt(i));
+        const cleanStr = String(str).replace(/₹/g, 'Rs.').replace(/[^\x00-\x7F]/g, '');
+        for (let i = 0; i < cleanStr.length; i++) {
+            const code = cleanStr.charCodeAt(i);
+            if (code <= 255) {
+                this.buffer.push(code);
+            }
         }
     }
 
@@ -73,7 +77,8 @@ class ReceiptPrinter {
         this.alignCenter();
         this.setTextSize(1, 1);
         this.setBold(true);
-        this.textLine("CAFE COFFEE DELITE");
+        const restName = (window.CONFIG?.restaurantName || 'RESTAURANT NAME').toUpperCase();
+        this.textLine(restName);
         this.setTextSize(0, 0);
         this.setBold(false);
         this.textLine("--- THERMAL PRINTER TEST ---");
@@ -102,7 +107,8 @@ class ReceiptPrinter {
         this.alignCenter();
         this.setTextSize(1, 1);
         this.setBold(true);
-        this.textLine("CAFE COFFEE DELITE");
+        const restName = (window.CONFIG?.restaurantName || 'RESTAURANT NAME').toUpperCase();
+        this.textLine(restName);
         this.setTextSize(0, 0);
         this.setBold(false);
         this.textLine("Live Orders & Table Billing");
@@ -170,7 +176,7 @@ class ReceiptPrinter {
     // --- COMMUNICATION ---
 
     bytesToHex(bytesArray) {
-        return bytesArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return bytesArray.map(b => (b & 0xFF).toString(16).padStart(2, '0')).join('');
     }
 
     async sendToPrinter(bytesArray, targetIp = null, targetPort = null) {

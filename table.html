@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Cafe Coffee Delite — Premium digital menu">
+    <meta name="description" content="Digital Menu — Table Ordering">
     <meta name="theme-color" content="#d32f2f">
-    <title>Cafe Coffee Delite | Digital Menu</title>
+    <title>Digital Menu | Table Ordering</title>
     <!-- Load environment variables for both local and Netlify -->
     <script>
       window.ENV = {
-        SUPABASE_URL: 'https://luhwhzsyjsiwdmwrohwc.supabase.co',
-        SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0'
+        SUPABASE_URL: 'https://puwkpflzgnrontluvicn.supabase.co',
+        SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d2twZmx6Z25yb250bHV2aWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDA1ODcsImV4cCI6MjEwNjYxNjU4N30.Xyr6DjK64ZJxC4QadjYXDCaH7r79VjM8PaaLrJ9Cn84'
       };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,10 +26,10 @@
         <div class="welcome-sparks" id="welcomeSparks"></div>
         <div class="welcome-center">
             <div class="welcome-logo-mark" aria-hidden="true">
-                <img src="assets/logo.jpeg" class="welcome-logo" alt="Cafe Coffee Delite — Premium Coffee Experience" draggable="false">
+                <img src="assets/logo.jpeg" class="welcome-logo" alt="Restaurant Logo" draggable="false">
             </div>
             <p class="welcome-greeting">Welcome</p>
-            <h1 class="welcome-title">Cafe Coffee Delite</h1>
+            <h1 class="welcome-title">Your Restaurant</h1>
             <p class="welcome-message">We're glad you're here · Order from your table</p>
             <p class="welcome-sub" id="welcomeTagline">Sip, Savour, Smile</p>
         </div>
@@ -59,17 +59,17 @@
         <!-- Hero -->
         <section class="hero-clean" id="heroSection">
             <div class="hero-clean-bg">
-                <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200" alt="Cafe Coffee Delite Interior" loading="eager">
+                <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200" alt="Restaurant Interior" loading="eager">
             </div>
             
             <div class="hero-clean-content">
                 <span class="hero-offers-label">✨ Today's Offers</span>
                 <div class="hero-brand">
                     <div class="hero-clean-logo" aria-hidden="true">
-                        <img src="assets/logo.jpeg" class="hero-logo" alt="Cafe Coffee Delite — Premium Coffee Experience" draggable="false">
+                        <img src="assets/logo.jpeg" class="hero-logo" alt="Restaurant Logo" draggable="false">
                     </div>
                     <div>
-                        <h2 class="hero-clean-name">Cafe Coffee Delite</h2>
+                        <h2 class="hero-clean-name">Your Restaurant</h2>
                         <p class="hero-clean-tagline" id="heroTagline">Sip, Savour, Smile</p>
                     </div>
                 </div>
@@ -121,13 +121,30 @@
             <span class="waiter-help-icon" aria-hidden="true">💧</span>
             <span class="waiter-help-text">
                 <strong>Order Water</strong>
-                <small>1 Click Order</small>
+                <small>Quick Order</small>
             </span>
         </button>
 
     </div>
 
 
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Fly-to-cart animation layer -->
+    <div id="flyLayer" style="position:fixed;inset:0;pointer-events:none;z-index:9500;"></div>
+
+    <!-- Variant Picker Modal -->
+    <div class="modal-sheet" id="variantModal" aria-hidden="true">
+        <div class="modal-backdrop" id="variantModalBackdrop" data-close></div>
+        <div class="modal-panel food-modal-panel" style="max-width: 380px; text-align: center; padding: 24px;">
+            <button type="button" class="modal-close" id="variantModalClose" aria-label="Close">✕</button>
+            <h2 id="variantModalTitle" style="font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; color: var(--text);"></h2>
+            <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 18px;">Choose your preference:</p>
+            <div id="variantOptions" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+    </div>
 
     <!-- Food detail modal -->
     <div class="modal-sheet" id="foodModal" aria-hidden="true">

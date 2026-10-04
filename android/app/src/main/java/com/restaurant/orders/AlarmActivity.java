@@ -1,4 +1,4 @@
-package com.cafecoffeedelite.orders;
+package com.restaurant.orders;
 
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -32,8 +32,8 @@ import java.util.Locale;
 
 public class AlarmActivity extends Activity {
     private static final String TAG = "AlarmActivity";
-    private static final String SUPA_REST_URL = "https://luhwhzsyjsiwdmwrohwc.supabase.co/rest/v1/orders";
-    private static final String SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1aHdoenN5anNpd2Rtd3JvaHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTE5NTUsImV4cCI6MjEwMzM4Nzk1NX0.ZtNOL4PAvdY8udDYki3vTjuCw4jb8UdeZ4_abOMaWT0";
+    private static final String SUPA_REST_URL = "https://puwkpflzgnrontluvicn.supabase.co/rest/v1/orders";
+    private static final String SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d2twZmx6Z25yb250bHV2aWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDA1ODcsImV4cCI6MjEwNjYxNjU4N30.Xyr6DjK64ZJxC4QadjYXDCaH7r79VjM8PaaLrJ9Cn84";
 
     private MediaPlayer mediaPlayer;
     private String currentOrderId = null;

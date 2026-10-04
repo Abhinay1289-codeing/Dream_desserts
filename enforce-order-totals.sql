@@ -1,5 +1,5 @@
 -- ================================================
--- Cafe Coffee Delite — Server-side Price Validation
+-- Digital Menu App — Server-side Price Validation
 -- RUN THIS in Supabase SQL Editor
 -- ================================================
 
@@ -35,15 +35,14 @@ BEGIN
     -- 2. Iterate through items and calculate subtotal based on real prices
     FOR item IN SELECT * FROM jsonb_array_elements(NEW.items)
     LOOP
-        -- Fetch real price from menu_items using original_name (for variants) or name
         SELECT price INTO real_price 
         FROM public.menu_items 
-        WHERE name = COALESCE(item->>'original_name', item->>'name')
-          AND available = true;
+        WHERE name = COALESCE(item->>'original_name', item->>'name');
         
         IF real_price IS NULL THEN
-            -- Reject order if item doesn't exist or is unavailable to prevent manipulation
-            RAISE EXCEPTION 'Item "%" is currently out of stock or does not exist', COALESCE(item->>'original_name', item->>'name');
+            -- If the item was deleted from the menu, fall back to the existing price on the order
+            -- so that the order doesn't get "stuck" and can still be updated/cancelled.
+            real_price := (item->>'price')::numeric;
         END IF;
 
         -- Update the item JSON to have the correct real price

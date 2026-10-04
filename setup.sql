@@ -1,5 +1,5 @@
 -- ================================================
--- Cafe Coffee Delite — Secure Supabase Setup
+-- Digital Menu App — Secure Supabase Setup
 -- ================================================
 -- IMPORTANT: THIS SETUP FOLLOWS SECURITY BEST PRACTICES!
 -- ================================================

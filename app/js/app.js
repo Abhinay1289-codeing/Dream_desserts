@@ -1,6 +1,6 @@
 /**
- * Cafe Coffee Delite — Pure Frontend Menu App
- * No backend required. WhatsApp integration for ordering.
+ * Digital Menu App — Pure Frontend Logic
+ * Works standalone or connected to Supabase backend.
  */
 
 /* ===== CONFIG ===== */
@@ -21,22 +21,15 @@ function formatWhatsAppNumber(number) {
 }
 
 const CONFIG = {
-    restaurantName: "Cafe Coffee Delite",
+    restaurantName: "Your Restaurant",
     tagline: "Sip, Savour, Smile",
-    whatsappPhone: "9912366665",   // ← WhatsApp order number
+    whatsappPhone: "",   // ← WhatsApp order number
     gstRate: 0.05, // Default 5% rate but disabled
     gstEnabled: false, // Default OFF
-    popularItems: [
-        "Chicken Fry Piece Biryani",
-        "Chicken Dum Biryani",
-        "Banana Leaf Biryani",
-        "Spicy Mexican Chicken Pizza",
-        "Veg Momos (Steamed/Fried) (5 Pcs)",
-        "Corn Samosa (4 Pcs)"
-    ],
+    popularItems: [],
     biryanisComingSoon: false,
     chineseComingSoon: false,
-    waiterEnabled: false
+    waiterEnabled: true
 };
 
 /* ===== MAIN & SUB CATEGORIES ===== */
@@ -267,9 +260,9 @@ const NON_VEG_OVERRIDES = new Set([
     "mixed mughlai biryani",
     "pot biryani",
     "kheema biryani",
-    "highway delite spl biryani",
+    "house special biryani",
     "8 to 8 chicken",
-    "highway delite spl (chicken)",
+    "house special (chicken)",
     "mutton 65",
     "mutton manchurian",
     "chilli mutton",
@@ -278,13 +271,13 @@ const NON_VEG_OVERRIDES = new Set([
     "sezwan mutton",
     "mutton fried rice",
     "spl mutton fried rice",
-    "spl highway delite fried rice",
+    "spl house special fried rice",
     "sambar rice with chicken fry"
 ]);
 
 function isVeg(item) {
-    const n = item.name.toLowerCase();
-    if (NON_VEG_OVERRIDES.has(n)) return false;
+    const n = (item.name || "").toLowerCase().trim();
+    if (n.includes("banana leaf") || NON_VEG_OVERRIDES.has(n)) return false;
     return !(n.includes("chicken") || n.includes("mutton") || n.includes("fish") || n.includes("egg") || n.includes("pepperoni") || n.includes("kheema") || n.includes("keema") || n.includes("prawn") || n.includes("shrimp"));
 }
 
@@ -300,9 +293,12 @@ const INGREDIENT_MAP = {
 };
 
 function enrichItem(item) {
+    const local = (typeof menuData !== 'undefined' && menuData.restaurant) ? menuData.restaurant.find(l => l.name === item.name) : null;
+    const imgSrc = (item.image && item.image.trim() !== '') ? item.image : (local?.image || 'assets/images/placeholder.webp');
     const hash = item.name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     return {
         ...item,
+        image: imgSrc,
         isVeg: isVeg(item),
         description: item.description?.trim()
             ? item.description
@@ -316,8 +312,12 @@ function enrichItem(item) {
 }
 
 function getItems() {
-  // SUPABASE DISABLED: Always use local menu-data.js as primary source.
-  // When Supabase is re-enabled, the cache block above will take over automatically.
+  if (menuItemsCache.length > 0) {
+    return menuItemsCache.map(item => ({
+      ...enrichItem(item),
+      category: categoryOverrides[item.category] || item.category
+    }));
+  }
   return (menuData.restaurant || []).map(enrichItem);
 }
 
@@ -387,7 +387,7 @@ function applyBrand() {
   // Show/hide waiter help button
   const waiterFab = document.getElementById('waiterFab');
   if (waiterFab) {
-    waiterFab.style.display = CONFIG.waiterEnabled ? 'flex' : 'none';
+    waiterFab.style.display = (CONFIG.waiterEnabled !== false) ? 'flex' : 'none';
   }
 
   // Apply custom theme color if set
@@ -419,7 +419,7 @@ function filterItems(items) {
     let list = items;
     // First filter by main category
     if (activeMainCategory === "cafe") {
-        const chineseCats = ["Chinese", "Starters", "Veg Starters", "Soups", "Fried Rice", "Veg Fried Rice", "Rice"];
+        const chineseCats = ["Chinese", "Starters", "Veg Starters", "Soups", "Fried Rice", "Veg Fried Rice", "Rice", "Biryanis", "Veg Biryanis"];
         list = list.filter(i => !chineseCats.includes(i.category));
     } else if (activeMainCategory === "starters") {
         list = list.filter(i => i.category === "Starters" || i.category === "Veg Starters");
@@ -498,12 +498,15 @@ function initWelcome() {
         }
     }
 
-    setTimeout(() => {
+    const dismissWelcome = () => {
         splash?.classList.add("is-done");
         shell?.classList.remove("is-welcome");
         shell?.classList.add("is-ready");
         splash?.setAttribute("aria-hidden", "true");
-    }, 2500);
+    };
+
+    splash?.addEventListener("click", dismissWelcome);
+    setTimeout(dismissWelcome, 2200);
 }
 
 /* ===== HEADER ===== */
@@ -659,7 +662,7 @@ function isOrderableItem(itemName) {
 }
 
 function buildCard(item, i) {
-    const inCart = cart.find(c => c.name === item.name);
+    const inCart = cart.find(c => c.name === item.name || c.original_name === item.name);
     const avail = item.available !== false;
     const comingSoon = isCategoryComingSoon(item.category) && !isOrderableItem(item.name);
     const btnLabel = comingSoon ? "Coming Soon" : !avail ? "Not Available" : inCart ? `In Cart (${inCart.qty})` : "Add";
@@ -728,10 +731,12 @@ function renderAlsoBuy() {
 
     section.classList.remove("is-hidden");
     track.innerHTML = popular.map(item => {
-        const inCart = cart.find(c => c.name === item.name);
+        const inCart = cart.find(c => c.name === item.name || c.original_name === item.name);
+        const local = (typeof menuData !== 'undefined' && menuData.restaurant) ? menuData.restaurant.find(l => l.name === item.name) : null;
+        const imgSrc = (item.image && item.image.trim() !== '') ? item.image : (local?.image || 'assets/images/placeholder.webp');
         return `
         <article class="also-buy-chip" data-name="${esc(item.name)}">
-            <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" data-src="${addCacheBuster(item.image)}" alt="${esc(item.name)}" loading="lazy" decoding="async" class="lazy-img">
+            <img src="${addCacheBuster(imgSrc)}" alt="${esc(item.name)}" loading="lazy" decoding="async" class="also-buy-img" onerror="this.onerror=null;this.src='assets/images/placeholder.webp';">
             <div class="also-buy-chip-body">
                 <h3>${esc(item.name)}</h3>
                 <p>₹${item.price} · ⭐ ${item.rating}</p>
@@ -816,7 +821,7 @@ function bindCardEvents(grid) {
 
 function syncAddButtons() {
     document.querySelectorAll(".add-btn[data-add]").forEach(btn => {
-        const ex = cart.find(c => c.name === btn.dataset.add);
+        const ex = cart.find(c => c.name === btn.dataset.add || c.original_name === btn.dataset.add);
         btn.textContent = ex ? `In Cart (${ex.qty})` : "Add";
         btn.classList.toggle("in-cart", Boolean(ex));
     });
@@ -921,6 +926,8 @@ function updateCartUI() {
     if (!body) return;
     if (!cart.length) {
         body.innerHTML = '<p style="text-align:center;color:var(--muted);padding:40px 0">Your cart is empty</p>';
+        syncAddButtons();
+        renderAlsoBuy();
         return;
     }
     body.innerHTML = cart.map(item => `
@@ -1078,22 +1085,7 @@ async function placeOrder() {
             return;
         }
 
-        const tableNum = ($("checkoutTable")?.value || "").trim() || getTableNumber() || "Takeaway";
-        if (!tableNum || tableNum === "Takeaway") {
-            const sessionTable = getTableNumber();
-            if (!sessionTable && !($("checkoutTable")?.value || "").trim()) {
-                showToast("⚠️ Please enter your table number", true);
-                $("checkoutTable")?.focus();
-                _isPlacingOrder = false;
-                if (placeBtn) {
-                    placeBtn.disabled = false;
-                    placeBtn.textContent = "Place Order";
-                }
-                return;
-            }
-        }
-
-        const finalTableNum = ($("checkoutTable")?.value || "").trim() || getTableNumber() || "1";
+        const finalTableNum = ($("checkoutTable")?.value || "").trim() || getTableNumber() || "Takeaway";
         const name = ($("checkoutName")?.value || "").trim() || "Guest";
         const phone = ($("checkoutPhone")?.value || "").trim() || "";
         const notes = ($("checkoutNotes")?.value || "").trim() || "";
@@ -1118,6 +1110,10 @@ async function placeOrder() {
         const total = sub + gst;
 
         // Save order directly to Supabase Cloud Database (triggers real-time update on admin dashboard)
+        if (!window.sb && typeof window.sbInit === 'function') {
+            window.sbInit();
+        }
+
         if (window.sb && typeof window.sbSaveOrder === 'function') {
             try {
                 const ok = await window.sbSaveOrder({
@@ -1133,7 +1129,7 @@ async function placeOrder() {
                 if (!ok) throw new Error("Database rejected order");
             } catch (e) {
                 console.error('[SB] Failed to save order:', e);
-                showToast("⚠️ Failed to place order. Please try again.", true);
+                showToast("⚠️ Order Failed: " + (e.message || "Unable to send order to kitchen."), true);
                 _isPlacingOrder = false;
                 if (placeBtn) {
                     placeBtn.disabled = false;
@@ -1141,6 +1137,15 @@ async function placeOrder() {
                 }
                 return;
             }
+        } else {
+            console.error('[SB] Supabase client unavailable');
+            showToast("⚠️ Order Failed: Database connection unavailable. Please inform staff.", true);
+            _isPlacingOrder = false;
+            if (placeBtn) {
+                placeBtn.disabled = false;
+                placeBtn.textContent = "Place Order";
+            }
+            return;
         }
 
         // Populate order details on success screen
@@ -1206,53 +1211,166 @@ function startOrderTracking() {
     setTimeout(advance, 2000);
 }
 
-/* ===== WAITER FAB ===== */
-function initWaiter() {
-    $("waiterFab")?.addEventListener("click", async () => {
-        const btn = $("waiterFab");
-        btn.disabled = true;
-        
-        try {
-            const tableNum = getTableNumber() || "Takeaway";
-            const itemsList = [{
-                name: "Water Bottle",
-                qty: 1,
-                price: 20,
-                notes: "1-Click Order"
-            }];
-            const total = 20;
+/* ===== WAITER FAB & WATER CONFIRMATION ===== */
+let waterQty = 1;
+const WATER_PRICE = 20;
 
-            if (window.sb && typeof window.sbSaveOrder === 'function') {
-                await window.sbSaveOrder({
-                    tableNumber: tableNum,
-                    customerName: "Guest",
-                    customerPhone: null,
-                    items: itemsList,
-                    subtotal: total,
-                    gst: 0,
-                    total: total,
-                    notes: "1-Click Order"
-                });
-            }
-            if ($("successTableBadge")) $("successTableBadge").textContent = `Table #${tableNum}`;
-            if ($("successOrderItems")) {
-                const itemsHtml = itemsList.map(i => `<div>${i.qty}× ${esc(i.name)} — ₹${i.price * i.qty}</div>`).join('');
-                $("successOrderItems").innerHTML = itemsHtml + `<div style="font-weight:800; color:var(--text); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border);">Total: ₹${total}</div>`;
-            }
+function updateWaterModalUI() {
+    if ($("waterQty")) $("waterQty").textContent = waterQty;
+    if ($("waterTotalPrice")) $("waterTotalPrice").textContent = waterQty * WATER_PRICE;
+}
 
-            closeScreens();
-            $("screenSuccess")?.classList.add("open");
-            $("screenSuccess")?.setAttribute("aria-hidden", "false");
-            document.body.style.overflow = "hidden";
-            showToast("💧 Water ordered successfully!");
-            launchConfetti();
-            startOrderTracking();
-        } catch (err) {
-            console.error("Error ordering water:", err);
-            showToast("⚠️ Failed to order water.", true);
-        } finally {
-            setTimeout(() => { btn.disabled = false; }, 2000);
+function openWaterConfirmationModal() {
+    waterQty = 1;
+    let modal = $("waterModal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.className = "modal-sheet";
+        modal.id = "waterModal";
+        modal.setAttribute("aria-hidden", "true");
+        modal.innerHTML = `
+            <div class="modal-backdrop" data-close></div>
+            <div class="modal-panel food-modal-panel" style="max-width: 380px; text-align: center; padding: 24px;">
+                <button type="button" class="modal-close" data-close aria-label="Close">✕</button>
+                <div style="font-size: 3rem; margin-bottom: 8px;">💧</div>
+                <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">Order Water Bottle</h2>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 18px;">Chilled & Sealed Mineral Water (1 Liter)</p>
+                
+                <div class="qty-row" style="justify-content: center; gap: 16px; margin-bottom: 20px;">
+                    <span style="font-weight: 700;">Quantity:</span>
+                    <div class="qty-ctrl">
+                        <button type="button" id="waterQtyMinus">−</button>
+                        <span id="waterQty">1</span>
+                        <button type="button" id="waterQtyPlus">+</button>
+                    </div>
+                </div>
+                
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 24px; padding: 10px; background: rgba(212, 175, 55, 0.08); border-radius: 12px; border: 1px dashed var(--border);">
+                    Total: ₹<span id="waterTotalPrice">20</span>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-ghost" id="cancelWaterBtn" style="flex: 1;">Cancel</button>
+                    <button type="button" class="btn-primary" id="confirmWaterBtn" style="flex: 1;">Confirm Order</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        bindWaterModalEvents();
+    }
+
+    updateWaterModalUI();
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+}
+
+function closeWaterModal() {
+    const modal = $("waterModal");
+    if (modal) {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+    }
+}
+
+let _waterEventsBound = false;
+function bindWaterModalEvents() {
+    if (_waterEventsBound) return;
+    _waterEventsBound = true;
+
+    const modal = $("waterModal");
+    if (!modal) return;
+
+    modal.querySelectorAll("[data-close], #cancelWaterBtn").forEach(el => {
+        el.addEventListener("click", closeWaterModal);
+    });
+
+    $("waterQtyMinus")?.addEventListener("click", () => {
+        if (waterQty > 1) {
+            waterQty--;
+            updateWaterModalUI();
         }
+    });
+
+    $("waterQtyPlus")?.addEventListener("click", () => {
+        waterQty++;
+        updateWaterModalUI();
+    });
+
+    $("confirmWaterBtn")?.addEventListener("click", confirmAndPlaceWaterOrder);
+}
+
+async function confirmAndPlaceWaterOrder() {
+    const btn = $("confirmWaterBtn");
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Ordering...";
+    }
+
+    try {
+        const tableNum = getTableNumber() || "Takeaway";
+        const itemsList = [{
+            name: "Water Bottle",
+            qty: waterQty,
+            price: WATER_PRICE,
+            notes: "Water Order"
+        }];
+        const total = waterQty * WATER_PRICE;
+
+        if (window.sb && typeof window.sbSaveOrder === 'function') {
+            const ok = await window.sbSaveOrder({
+                tableNumber: tableNum,
+                customerName: "Guest",
+                customerPhone: null,
+                items: itemsList,
+                subtotal: total,
+                gst: 0,
+                total: total,
+                notes: "Water Order"
+            });
+            if (!ok) {
+                showToast("⚠️ Order Failed: Unable to send water order to kitchen.", true);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "Confirm Order";
+                }
+                return;
+            }
+        }
+
+        closeWaterModal();
+
+        if ($("successTableBadge")) $("successTableBadge").textContent = `Table #${tableNum}`;
+        if ($("successOrderItems")) {
+            const itemsHtml = itemsList.map(i => `<div>${i.qty}× ${esc(i.name)} — ₹${i.price * i.qty}</div>`).join('');
+            $("successOrderItems").innerHTML = itemsHtml + `<div style="font-weight:800; color:var(--text); margin-top:6px; padding-top:6px; border-top:1px dashed var(--border);">Total: ₹${total}</div>`;
+        }
+
+        closeScreens();
+        $("screenSuccess")?.classList.add("open");
+        $("screenSuccess")?.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        showToast(`💧 ${waterQty} Water Bottle(s) ordered successfully!`);
+        launchConfetti();
+        startOrderTracking();
+    } catch (err) {
+        console.error("Error ordering water:", err);
+        showToast("⚠️ Failed to order water.", true);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Confirm Order";
+        }
+    }
+}
+
+function initWaiter() {
+    if ($("waterModal")) {
+        bindWaterModalEvents();
+    }
+    $("waiterFab")?.addEventListener("click", () => {
+        openWaterConfirmationModal();
     });
 }
 
@@ -1297,11 +1415,24 @@ function initModals() {
     });
     $("modalAddBtn")?.addEventListener("click", () => {
         if (!modalItem) return;
-        const ex = cart.find(c => c.name === modalItem.name);
-        if (ex) ex.qty = modalQty;
-        else cart.push({ ...modalItem, qty: modalQty, notes: $("modalNotes")?.value || "" });
+        const itemToSave = modalItem;
+        const qtyToSave = modalQty;
+        const notesToSave = $("modalNotes")?.value || "";
+        const variants = parseVariants(itemToSave.name);
+        if (variants) {
+            closeFoodModal();
+            openVariantPicker(itemToSave, $("modalAddBtn"));
+            return;
+        }
+        const ex = cart.find(c => c.name === itemToSave.name);
+        if (ex) {
+            ex.qty = qtyToSave;
+            if (notesToSave) ex.notes = notesToSave;
+        } else {
+            cart.push({ ...itemToSave, qty: qtyToSave, notes: notesToSave });
+        }
         updateCartUI();
-        flyToCart(modalItem.image, $("modalAddBtn"));
+        flyToCart(itemToSave.image, $("modalAddBtn"));
         closeFoodModal();
         showToast("✅ Added to cart");
     });
@@ -1310,6 +1441,7 @@ function initModals() {
         if (e.key === "Escape") {
             closeCart();
             closeFoodModal();
+            closeWaterModal();
             closeScreens();
             document.querySelectorAll(".modal-sheet.open").forEach(m => {
                 m.classList.remove("open");
@@ -1335,9 +1467,7 @@ function init() {
     initWaiter();
     updateCartUI();
 
-    // SUPABASE DISABLED: Data is loaded directly from menu-data.js above.
-    // To re-enable Supabase sync, uncomment the block below and re-enable scripts in index.html.
-    /*
+    // Load live menu items and config from Supabase
     loadDataFromSupabase().then(async () => {
       if (window.sb && menuItemsCache.length === 0) {
         await sbSeedMenuIfEmpty(menuData.restaurant);
@@ -1350,7 +1480,6 @@ function init() {
       sbSubscribeConfigChanges(refreshAll);
       sbSubscribeCategoryOverridesChanges(refreshAll);
     }
-    */
 
     // Apply tagline
     if ($("welcomeTagline")) $("welcomeTagline").textContent = CONFIG.tagline;

@@ -1,7 +1,7 @@
 {
-  "name": "cafe-coffee-delite",
+  "name": "restaurant-menu-app",
   "version": "1.0.0",
-  "description": "Cafe Coffee Delite Digital Menu",
+  "description": "Digital Menu & Restaurant Ordering Application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -23,6 +23,7 @@
     "@capacitor/core": "^8.5.1",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.2",
+    "@supabase/supabase-js": "^2.116.0",
     "capacitor-tcp-socket": "^7.1.1",
     "dotenv": "^16.4.7",
     "sharp": "^0.35.4"

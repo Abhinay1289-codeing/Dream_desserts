@@ -1,5 +1,5 @@
 -- ================================================
--- Cafe Coffee Delite — Fix All Supabase Policies
+-- Digital Menu App — Fix All Supabase Policies
 -- RUN THIS in Supabase SQL Editor
 -- ================================================
 

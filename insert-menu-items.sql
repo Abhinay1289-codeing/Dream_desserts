@@ -1,5 +1,5 @@
 -- ================================================
--- Cafe Coffee Delite — Full Menu Insert (from handwritten menu)
+-- Digital Menu App — Sample Menu Insert
 -- Run this in Supabase Dashboard → SQL Editor
 -- ================================================
 -- Categories: Starters (Non-Veg), Starters (Mutton), Starters (Veg),
@@ -21,7 +21,7 @@ INSERT INTO menu_items (name, price, category, available, sort_order) VALUES
   ('8 to 8 Chicken',                  239, 'Starters',        true, 109),
   ('Pepper Chicken',                  329, 'Starters',        true, 110),
   ('Sezwan Chicken',                  239, 'Starters',        true, 111),
-  ('Highway Delite Spl (Chicken)',    389, 'Starters',        true, 112)
+  ('House Special (Chicken)',         389, 'Starters',        true, 112)
 ON CONFLICT (name) DO UPDATE
   SET price = EXCLUDED.price,
       category = EXCLUDED.category,
@@ -66,7 +66,7 @@ INSERT INTO menu_items (name, price, category, available, sort_order) VALUES
   ('Paneer Manchurian',               189, 'Veg Starters',    true, 318),
   ('Paneer Roast',                    199, 'Veg Starters',    true, 319),
   ('Paneer Majestic',                 199, 'Veg Starters',    true, 320),
-  ('Highway Delite (Veg)',            229, 'Veg Starters',    true, 321)
+  ('House Special (Veg)',            229, 'Veg Starters',    true, 321)
 ON CONFLICT (name) DO UPDATE
   SET price = EXCLUDED.price,
       category = EXCLUDED.category,
@@ -94,7 +94,7 @@ INSERT INTO menu_items (name, price, category, available, sort_order) VALUES
   ('Mixed Mughlai Biryani',           329, 'Biryanis',        true, 502),
   ('Pot Biryani',                     350, 'Biryanis',        true, 503),
   ('Kheema Biryani',                  369, 'Biryanis',        true, 504),
-  ('Highway Delite Spl Biryani',      399, 'Biryanis',        true, 505),
+  ('House Special Biryani',           399, 'Biryanis',        true, 505),
   ('Baby Corn Biryani',               219, 'Biryanis',        true, 506),
   ('Veg Mixed Biryani',               249, 'Biryanis',        true, 507)
 ON CONFLICT (name) DO UPDATE
@@ -113,7 +113,7 @@ INSERT INTO menu_items (name, price, category, available, sort_order) VALUES
   ('Chicken Sezwan Fried Rice',       199, 'Fried Rice',      true, 605),
   ('Mutton Fried Rice',               289, 'Fried Rice',      true, 606),
   ('Spl Mutton Fried Rice',           319, 'Fried Rice',      true, 607),
-  ('Spl Highway Delite Fried Rice',   259, 'Fried Rice',      true, 608)
+  ('Spl House Special Fried Rice',    259, 'Fried Rice',      true, 608)
 ON CONFLICT (name) DO UPDATE
   SET price = EXCLUDED.price,
       category = EXCLUDED.category,

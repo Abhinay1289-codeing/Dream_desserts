@@ -1,5 +1,5 @@
 /**
- * Cafe Coffee Delite - Online Delivery Logic
+ * Online Delivery Logic
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,9 +12,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- QR Code Redirect ---
     // If a customer scans an old QR code (/?table=11), instantly redirect them to the Dining App
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('table')) {
-        window.location.href = '/table.html' + window.location.search;
+    const fullQuery = (window.location.search + window.location.hash).toLowerCase();
+    if (fullQuery.includes('table=')) {
+        const searchStr = window.location.search || (window.location.hash.includes('?') ? '?' + window.location.hash.split('?')[1] : '');
+        window.location.href = 'table.html' + (searchStr || window.location.search);
         return; // Stop execution
     }
 
@@ -296,6 +297,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // When cart opens, update QR Code
+    // Distance helper (Haversine formula in KM)
+    function calcDistanceKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // Default Delivery Configuration
+    const MIN_ORDER_AMOUNT = window.CONFIG?.minOrderAmount || 100;
+    const DEFAULT_DELIVERY_FEE = window.CONFIG?.deliveryFee || 30;
+    const FREE_DELIVERY_THRESHOLD = window.CONFIG?.freeDeliveryThreshold || 500;
+    let MAX_DELIVERY_RADIUS_KM = window.CONFIG?.maxDeliveryRadiusKm || 15;
+    let CAFE_LAT = window.CONFIG?.cafeLat || null;
+    let CAFE_LNG = window.CONFIG?.cafeLng || null;
+
+    // Load dynamic cafe settings from Supabase config if available
+    if (window.sbGetConfig) {
+        window.sbGetConfig().then(conf => {
+            if (conf) {
+                if (conf.cafeLat || conf.cafe_lat) CAFE_LAT = Number(conf.cafeLat || conf.cafe_lat);
+                if (conf.cafeLng || conf.cafe_lng) CAFE_LNG = Number(conf.cafeLng || conf.cafe_lng);
+                if (conf.maxDeliveryRadiusKm || conf.delivery_radius_km) {
+                    MAX_DELIVERY_RADIUS_KM = Number(conf.maxDeliveryRadiusKm || conf.delivery_radius_km);
+                }
+            }
+        }).catch(e => console.warn('[Config] Failed to fetch cafe location config:', e));
+    }
+
+    // When cart opens, update QR Code
     const proceedCheckoutBtn = document.getElementById('proceedCheckout');
     proceedCheckoutBtn.addEventListener('click', () => {
         if (!upiId || cart.length === 0) return;
@@ -306,8 +340,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (CONFIG.gstEnabled) {
             total = sub + Math.round(sub * CONFIG.gstRate);
         }
+        const delFee = sub >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_DELIVERY_FEE;
+        total += delFee;
         
-        const upiUrl = `upi://pay?pa=${upiId}&pn=Cafe%20Coffee%20Delite&am=${total}&cu=INR`;
+        const restName = window.CONFIG?.restaurantName || 'Restaurant';
+        const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(restName)}&am=${total}&cu=INR`;
         const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiUrl)}`;
         
         const qrImg = document.getElementById('upiQrCode');
@@ -333,6 +370,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        let sub = 0;
+        const itemsList = cart.map(i => {
+            sub += i.price * i.qty;
+            return { name: i.name, original_name: i.original_name || i.name, qty: i.qty, price: i.price };
+        });
+
+        // 1. Minimum Order Amount Check
+        if (sub < MIN_ORDER_AMOUNT) {
+            showToast(`⚠️ Minimum order amount for delivery is ₹${MIN_ORDER_AMOUNT} (Current: ₹${sub})`, true);
+            _isPlacingOrder = false;
+            newPlaceBtn.disabled = false;
+            newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
+            return;
+        }
+
         const address = addressInput.value.trim();
         const landmark = document.getElementById('checkoutLandmark').value.trim();
         const name = document.getElementById('checkoutName').value.trim();
@@ -340,8 +392,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const utr = document.getElementById('checkoutUtr').value.trim();
         const notes = document.getElementById('checkoutNotes').value.trim();
         
-        const lat = latInput.value || null;
-        const lng = lngInput.value || null;
+        const lat = latInput.value ? parseFloat(latInput.value) : null;
+        const lng = lngInput.value ? parseFloat(lngInput.value) : null;
 
         if (!address || !name || !phone) {
             showToast('⚠️ Please fill required fields (Address, Name, Phone)', true);
@@ -349,6 +401,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             newPlaceBtn.disabled = false;
             newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
             return;
+        }
+
+        // Re-check config in case it updated
+        let activeCafeLat = CAFE_LAT;
+        let activeCafeLng = CAFE_LNG;
+        let activeMaxRadius = MAX_DELIVERY_RADIUS_KM || 15;
+
+        if (window.sbGetConfig) {
+            try {
+                const conf = await window.sbGetConfig();
+                if (conf) {
+                    if (conf.cafeLat || conf.cafe_lat) activeCafeLat = Number(conf.cafeLat || conf.cafe_lat);
+                    if (conf.cafeLng || conf.cafe_lng) activeCafeLng = Number(conf.cafeLng || conf.cafe_lng);
+                    if (conf.maxDeliveryRadiusKm || conf.delivery_radius_km) activeMaxRadius = Number(conf.maxDeliveryRadiusKm || conf.delivery_radius_km);
+                }
+            } catch(e) {}
+        }
+
+        // 2. Maximum Delivery Radius Check
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+            if (activeCafeLat && activeCafeLng && !isNaN(activeCafeLat) && !isNaN(activeCafeLng)) {
+                const distKm = calcDistanceKm(activeCafeLat, activeCafeLng, lat, lng);
+                if (distKm > activeMaxRadius) {
+                    showToast(`⚠️ Delivery location is outside our ${activeMaxRadius} km service area (${distKm.toFixed(1)} km away)`, true);
+                    _isPlacingOrder = false;
+                    newPlaceBtn.disabled = false;
+                    newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
+                    return;
+                }
+            } else {
+                console.warn('[Delivery] Cafe location not yet configured in admin settings. Distance restriction bypassed.');
+            }
         }
 
         // Auto save to profile for future checkouts (both local and Supabase Cloud)
@@ -385,17 +469,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Calculate totals
-        let sub = 0;
-        const itemsList = cart.map(i => {
-            sub += i.price * i.qty;
-            return { name: i.name, original_name: i.original_name || i.name, qty: i.qty, price: i.price };
-        });
+        // Calculate final totals including GST and Delivery Fee
         const gstAmt = CONFIG.gstEnabled ? Math.round(sub * CONFIG.gstRate) : 0;
-        const total = sub + gstAmt;
+        const deliveryFee = sub >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_DELIVERY_FEE;
+        const total = sub + gstAmt + deliveryFee;
 
         try {
-            if (window.sb) {
+            if (!window.sb && typeof window.sbInit === 'function') {
+                window.sbInit();
+            }
+            if (window.sb && typeof window.sbSaveOrder === 'function') {
                 const ok = await window.sbSaveOrder({
                     order_type: 'online',
                     user_id: currentUserSession && currentUserSession.user ? currentUserSession.user.id : null,
@@ -404,21 +487,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     customerPhone: phone,
                     address: address,
                     landmark: landmark,
-                    latitude: lat ? parseFloat(lat) : null,
-                    longitude: lng ? parseFloat(lng) : null,
+                    latitude: lat,
+                    longitude: lng,
                     utr_number: utr || null,
                     payment_proof_url: proofUrl,
                     items: itemsList,
                     subtotal: sub,
                     gst: gstAmt,
                     total: total,
-                    notes: notes || null
+                    notes: (notes ? `${notes} | ` : '') + (deliveryFee > 0 ? `Delivery Fee: ₹${deliveryFee}` : 'Free Delivery')
                 });
                 if (!ok) throw new Error("Database rejected order");
+            } else {
+                throw new Error("Database connection unavailable");
             }
         } catch (e) {
             console.error('[SB] Failed to save order:', e);
-            showToast("⚠️ Failed to place order. Please try again.", true);
+            showToast("⚠️ Order Failed: " + (e.message || "Unable to send order to kitchen."), true);
             _isPlacingOrder = false;
             newPlaceBtn.disabled = false;
             newPlaceBtn.textContent = '🚀 Confirm & Send Order to Kitchen';
@@ -734,6 +819,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <span style="color:var(--muted); font-size:0.8rem;">📍 ${esc(ord.address || 'Delivery')}</span>
                                 <span style="font-weight:900; color:#22c55e; font-size:1.05rem;">₹${ord.total}</span>
                             </div>
+
+                            ${status === 'pending' ? `
+                                <button type="button" style="margin-top:10px; width:100%; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:8px; border-radius:10px; font-weight:800; font-size:0.82rem; cursor:pointer;" onclick="cancelCustomerOrder('${ord.id}')">
+                                    🚫 Cancel Order
+                                </button>
+                            ` : ''}
                         </div>
                     `;
                 }).join('');
@@ -766,6 +857,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadCustomerOrders();
         });
     }
+
+    if (!window._customerOrdersPollInterval) {
+        window._customerOrdersPollInterval = setInterval(() => {
+            loadCustomerOrders();
+        }, 10000);
+    }
 });
 
 window.confirmCustomerReceipt = async function(orderId) {
@@ -777,5 +874,18 @@ window.confirmCustomerReceipt = async function(orderId) {
         if (window.launchConfetti) window.launchConfetti();
     } else {
         showToast('❌ Failed to update status', true);
+    }
+};
+
+window.cancelCustomerOrder = async function(orderId) {
+    if (!orderId || !confirm('Are you sure you want to cancel this order?')) return;
+    showToast('⏳ Cancelling order...');
+    const ok = await window.sbUpdateOrderStatus(orderId, 'cancelled');
+    if (ok) {
+        showToast('🚫 Order cancelled');
+        if (window.loadCustomerOrders) window.loadCustomerOrders();
+        else location.reload();
+    } else {
+        showToast('❌ Failed to cancel order', true);
     }
 };

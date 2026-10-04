@@ -53,7 +53,14 @@ const server = http.createServer((req, res) => {
     requestPath = '/index.html';
   }
 
-  let filePath = path.join(__dirname, requestPath);
+  let safePath = path.normalize(requestPath).replace(/^(\.\.[\/\\])+/, '');
+  let filePath = path.join(__dirname, safePath);
+  const resolvedPath = path.resolve(filePath);
+  if (!resolvedPath.startsWith(path.resolve(__dirname))) {
+    res.writeHead(403, secureHeaders);
+    return res.end('403 Forbidden');
+  }
+
   const extname = String(path.extname(filePath)).toLowerCase();
   const contentType = mimeTypes[extname] || 'application/octet-stream';
 
