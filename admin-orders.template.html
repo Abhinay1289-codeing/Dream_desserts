@@ -1050,39 +1050,37 @@
                 onlineDeliveryContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted)">No orders out for delivery</div>`;
             }
 
-            // 2. RENDER DINING TABLES (RIGHT COLUMN: "Need to be delivered")
+            // 2. RENDER ACTIVE DINING TOKENS
             diningContainer.innerHTML = '';
             const activeDiningKeys = Object.keys(activeTableOrdersMap).filter(k => k.toLowerCase() !== 'online');
-            const allDiningSet = new Set(DEFAULT_DINING_TABLES.map(String));
-            activeDiningKeys.forEach(k => allDiningSet.add(k));
 
-            const sortedDining = Array.from(allDiningSet).sort((a, b) => {
-                const na = parseInt(a), nb = parseInt(b);
-                if (!isNaN(na) && !isNaN(nb)) return na - nb;
-                return a.localeCompare(b);
-            });
+            if (activeDiningKeys.length === 0) {
+                diningContainer.innerHTML = `
+                    <div style="grid-column:1/-1; background:#ffffff; border:1px dashed var(--border); border-radius:18px; padding:32px 16px; text-align:center;">
+                        <div style="font-size:2.4rem; margin-bottom:8px;">🍽️</div>
+                        <div style="font-weight:800; font-size:1.05rem; color:var(--text); margin-bottom:4px;">No Active Dining Tokens</div>
+                        <div style="font-size:0.8rem; color:var(--muted); max-width:320px; margin:0 auto 16px;">Customer orders scanned via Master QR will appear here as live Token Cards with Customer Name & Order Details.</div>
+                        <button onclick="openMenuOverlay('Manual Token')" style="background:var(--primary); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:800; font-size:0.82rem; cursor:pointer; box-shadow:0 4px 14px var(--primary-glow);">➕ Create Manual Order / Token</button>
+                    </div>
+                `;
+            } else {
+                const sortedDining = activeDiningKeys.sort((a, b) => {
+                    const na = parseInt(a.replace(/\D/g, '')), nb = parseInt(b.replace(/\D/g, ''));
+                    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                    return a.localeCompare(b);
+                });
 
-            sortedDining.forEach(tNum => {
-                const ordersForTable = activeTableOrdersMap[tNum] || [];
-                const isOccupied = ordersForTable.length > 0;
+                sortedDining.forEach(tNum => {
+                    const ordersForTable = activeTableOrdersMap[tNum] || [];
+                    const firstOrd = ordersForTable[0] || {};
+                    const custName = esc(firstOrd.customer_name || 'Guest');
+                    const labelStr = tNum.startsWith('Token') ? tNum : `Token #${tNum}`;
 
-                const card = document.createElement('div');
-                card.className = `table-card ${isOccupied ? 'occupied' : 'vacant'}`;
-
-                if (!isOccupied) {
-                    card.onclick = () => openMenuOverlay(tNum);
-                    card.innerHTML = `
-                        <div class="table-num">${tNum}</div>
-                        <div class="table-sub">Vacant</div>
-                    `;
-                } else {
                     const statuses = ordersForTable.map(o => o.status);
                     let domStatus = 'pending';
                     if (statuses.every(s => s === 'served')) domStatus = 'served';
                     else if (statuses.includes('ready')) domStatus = 'ready';
                     else if (statuses.includes('preparing')) domStatus = 'preparing';
-
-                    card.classList.add(`status-${domStatus}`);
 
                     let totalAmt = 0;
                     let itemCount = 0;
@@ -1094,18 +1092,21 @@
                     const isNewAlert = !seenNotificationTables.has(tNum) || ordersForTable.length > 1;
                     const notifyBadgeHtml = isNewAlert ? `<div class="table-notify-badge">🔔 NEW</div>` : '';
 
+                    const card = document.createElement('div');
+                    card.className = `table-card occupied status-${domStatus}`;
                     card.onclick = () => openTableModal(tNum);
 
                     card.innerHTML = `
                         ${notifyBadgeHtml}
-                        <div class="table-num">${tNum}</div>
+                        <div class="table-num" style="font-size:1.3rem;">${labelStr}</div>
+                        <div style="font-size:0.75rem; font-weight:800; color:var(--text); max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px;">👤 ${custName}</div>
                         <div class="item-count-badge">${itemCount} items</div>
                         <div class="card-total">₹${totalAmt}</div>
                     `;
-                }
 
-                diningContainer.appendChild(card);
-            });
+                    diningContainer.appendChild(card);
+                });
+            }
         }
 
         // HTML ESCAPE HELPER
