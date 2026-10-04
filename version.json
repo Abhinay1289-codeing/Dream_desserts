@@ -1,6 +1,6 @@
 {
-  "versionCode": 20,
-  "versionName": "v2.0.1",
+  "versionCode": 21,
+  "versionName": "v2.0.2",
   "apkUrl": "https://raw.githubusercontent.com/Abhinay1289-codeing/Dream_desserts/main/Restaurant_Orders_App.apk",
-  "changelog": "Single Master QR Code, Device-bound Token Sessions (Token #1, #2, #3...), FCM Push Notification Payload Fixes & Bluetooth Thermal Printer Setup."
+  "changelog": "Fresh APK update with Single Master QR Code, Device-bound Token Sessions, Push Notifications & Bluetooth Printing."
 }
