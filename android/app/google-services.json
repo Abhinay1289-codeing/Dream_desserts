@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "386873500379",
-    "project_id": "cafeapp-d118d",
-    "storage_bucket": "cafeapp-d118d.firebasestorage.app"
+    "project_number": "638418583531",
+    "project_id": "dreamdesserts-9cab3",
+    "storage_bucket": "dreamdesserts-9cab3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:386873500379:android:590329e666d225346ee2fe",
+        "mobilesdk_app_id": "1:638418583531:android:8eb0b62bf433eae94923ae",
         "android_client_info": {
           "package_name": "com.dreamdesserts.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyApmOjdraa7kAclAIrin9LgEeM_fLFoQjI"
+          "current_key": "AIzaSyByVJUwPbNPhuP-2YlKqmIhJ13cNvSfx14"
         }
       ],
       "services": {
